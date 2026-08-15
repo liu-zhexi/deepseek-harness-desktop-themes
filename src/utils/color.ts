@@ -67,3 +67,98 @@ export function contrastRatio(a: string, b: string): number {
   const [hi, lo] = la >= lb ? [la, lb] : [lb, la];
   return (hi + 0.05) / (lo + 0.05);
 }
+
+/** Parse a `#RRGGBB` color into its HSL components (h 0..360, s/l 0..1). */
+export function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const { r, g, b } = hexToRgb(hex);
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === rn) h = (gn - bn) / d + (gn < bn ? 6 : 0);
+  else if (max === gn) h = (bn - rn) / d + 2;
+  else h = (rn - gn) / d + 4;
+  return { h: h * 60, s, l };
+}
+
+function hslToRgbChannel(p: number, q: number, t: number): number {
+  let tt = t;
+  if (tt < 0) tt += 1;
+  if (tt > 1) tt -= 1;
+  if (tt < 1 / 6) return p + (q - p) * 6 * tt;
+  if (tt < 1 / 2) return q;
+  if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+  return p;
+}
+
+/** Build a `#RRGGBB` color from HSL components. */
+export function hslToHex(h: number, s: number, l: number): string {
+  const hue = ((h % 360) + 360) % 360;
+  const sat = Math.min(1, Math.max(0, s));
+  const lig = Math.min(1, Math.max(0, l));
+  if (sat === 0) {
+    const v = Math.round(lig * 255).toString(16).padStart(2, '0');
+    return `#${v}${v}${v}`;
+  }
+  const q = lig < 0.5 ? lig * (1 + sat) : lig + sat - lig * sat;
+  const p = 2 * lig - q;
+  const ch = (t: number) => Math.round(hslToRgbChannel(p, q, t) * 255).toString(16).padStart(2, '0');
+  return `#${ch(hue / 360 + 1 / 3)}${ch(hue / 360)}${ch(hue / 360 - 1 / 3)}`;
+}
+
+/** Rotate a color's hue by `degrees` (may be negative). */
+export function rotateHue(hex: string, degrees: number): string {
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHex(h + degrees, s, l);
+}
+
+/** Scale a color's saturation by `factor` (1 = unchanged, 0 = grayscale). */
+export function adjustSaturation(hex: string, factor: number): string {
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHex(h, Math.min(1, Math.max(0, s * factor)), l);
+}
+
+/** Lighten (amount > 0) or darken (amount < 0) toward white/black. */
+export function adjustLightness(hex: string, amount: number): string {
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHex(h, s, Math.min(1, Math.max(0, l + amount)));
+}
+
+/**
+ * Pick the more readable of two candidate foregrounds on a background. When
+ * neither reaches `minRatio`, darken/lighten the winner until it does.
+ */
+export function readableOn(bg: string, dark: string, light: string, minRatio = 4.5): string {
+  const darkRatio = contrastRatio(dark, bg);
+  const lightRatio = contrastRatio(light, bg);
+  let winner = darkRatio >= lightRatio ? dark : light;
+  let ratio = Math.max(darkRatio, lightRatio);
+  let guard = 0;
+  while (ratio < minRatio && guard < 40) {
+    const lighter = relativeLuminance(bg) < 0.5;
+    winner = lighter ? adjustLightness(winner, 0.04) : adjustLightness(winner, -0.04);
+    ratio = contrastRatio(winner, bg);
+    guard += 1;
+  }
+  return winner;
+}
+
+/** Adjust `fg` toward readable contrast against `bg` (returns fg when fine). */
+export function ensureContrast(fg: string, bg: string, minRatio = 4.5): string {
+  let current = fg;
+  let ratio = contrastRatio(current, bg);
+  let guard = 0;
+  const darken = relativeLuminance(current) > relativeLuminance(bg);
+  while (ratio < minRatio && guard < 60) {
+    current = darken ? adjustLightness(current, -0.03) : adjustLightness(current, 0.03);
+    ratio = contrastRatio(current, bg);
+    guard += 1;
+  }
+  return current;
+}

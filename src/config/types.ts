@@ -1,27 +1,66 @@
 /**
- * Shared configuration types for DeepSeek Harness Desktop Themes.
+ * Shared configuration types for DeepSeek Harness Desktop Themes (schema v2).
  *
  * These types are platform-agnostic: they are imported by the Host entry
  * (schema registration) and the Client entry (presenter + settings UI), and
  * they are the single source of truth for the persisted settings shape.
  */
 
-/** Identifier of one of the three built-in desktop themes. */
-export type ThemeId = 'tokyo-night' | 'catppuccin-mocha' | 'black-gold';
+/** Identifier of one of the six built-in desktop themes. */
+export type ThemeId =
+  | 'quantum-blue'
+  | 'aurora-dream'
+  | 'mint-breeze'
+  | 'sakura-mist'
+  | 'sunset-flow'
+  | 'obsidian-gold';
 
 /** Wallpaper background fit modes. */
 export type WallpaperFit = 'cover' | 'contain' | 'stretch' | 'center' | 'tile';
 
-/** Glassmorphism performance tier. */
-export type GlassPerformanceMode = 'off' | 'light' | 'standard' | 'strong' | 'custom' | 'balanced';
+/** Glassmorphism blur strength presets. */
+export type BlurLevel = 'off' | 'light' | 'standard' | 'strong';
+
+/** Global performance tier (drives particle counts, effects, GPU budget). */
+export type PerformanceLevel = 'power-saver' | 'balanced' | 'quality';
+
+/** Animation speed presets. */
+export type AnimationSpeed = 'still' | 'gentle' | 'standard' | 'active';
+
+/** Particle density presets. */
+export type ParticleDensity = 'off' | 'low' | 'medium' | 'high';
+
+/** Light / glow intensity presets. */
+export type LightIntensity = 'off' | 'soft' | 'standard' | 'bright';
+
+/** Corner-radius presets. */
+export type BorderRadiusLevel = 'compact' | 'standard' | 'soft';
+
+/** Content width presets. */
+export type ContentWidthLevel = 'compact' | 'standard' | 'wide';
+
+/** Built-in visual-effect presets. */
+export type EffectPresetId =
+  | 'none'
+  | 'tech-data'
+  | 'starfield'
+  | 'aurora-flow'
+  | 'fireflies'
+  | 'bubbles'
+  | 'sakura'
+  | 'gold-dust'
+  | 'breathing'
+  | 'custom';
 
 export interface FontConfig {
-  /** UI font family (Latin-first fallback stack). */
-  uiFamily: string;
-  /** Code / monospace font family. */
-  codeFamily: string;
-  /** Chinese UI font family (appended to the UI stack). */
-  chineseFamily: string;
+  /** UI font preset key (see src/fonts/presets.ts). */
+  uiPreset: string;
+  /** Code font preset key. */
+  codePreset: string;
+  /** Custom UI font family (used only when `uiPreset === 'custom'`). */
+  uiCustomFamily: string;
+  /** Custom code font family (used only when `codePreset === 'custom'`). */
+  codeCustomFamily: string;
   /** Base UI font size in px. */
   fontSize: number;
   /** Code font size in px. */
@@ -47,6 +86,10 @@ export interface AppearanceConfig {
   panelOpacity: number;
   /** Input area background opacity (0.55..1.00). */
   inputOpacity: number;
+  /** Corner radius preset. */
+  borderRadius: BorderRadiusLevel;
+  /** Content width preset. */
+  contentWidth: ContentWidthLevel;
   /** Whether theme transitions / hover animations are enabled. */
   animationsEnabled: boolean;
 }
@@ -55,10 +98,17 @@ export interface WallpaperConfig {
   /** Master switch for the custom wallpaper layer. */
   enabled: boolean;
   /**
-   * Wallpaper source. Prefers a `file:` URL produced by the picker; a raw
-   * absolute path is normalized to `file:` on the Host side. Empty disables.
+   * Stable managed resource id (an IndexedDB key owned by the plugin). Empty
+   * disables. The raw image bytes live in IndexedDB, never in settings.
+   */
+  sourceId: string;
+  /**
+   * Runtime display URL (a `blob:` object URL derived from `sourceId`). This
+   * field is NOT the durable source and is cleared/re-derived across restarts.
    */
   path: string;
+  /** Original file name (shown in the recent list). */
+  name: string;
   /** Background fit mode. */
   fit: WallpaperFit;
   /** Horizontal anchor 0..100 (percent). */
@@ -77,12 +127,56 @@ export interface WallpaperConfig {
   saturation: number;
   /** Brightness adjustment (0.5..1.5, 1 = none). */
   brightness: number;
+  /** Mix the wallpaper with the theme accent color. */
+  tintEnabled: boolean;
+  /** Accent-mix strength (0..1). */
+  tintStrength: number;
+}
+
+export interface EffectsConfig {
+  /** Master switch for the visual effects layer. */
+  enabled: boolean;
+  /** Selected effect preset. */
+  preset: EffectPresetId;
+  /** Explicit particle count; 0 = auto (derived from area + performance tier). */
+  particleCount: number;
+  /** Particle size (1..6, abstract units). */
+  particleSize: number;
+  /** Particle speed multiplier (0.2..3). */
+  particleSpeed: number;
+  /** Particle opacity (0..1). */
+  particleOpacity: number;
+  /** Connect nearby particles with lines. */
+  connectLines: boolean;
+  /** Let particles drift toward the pointer. */
+  mouseInteraction: boolean;
+  /** Background parallax shift. */
+  parallax: boolean;
+  /** Soft cursor-following glow. */
+  cursorGlow: boolean;
+  /** Light / glow intensity preset. */
+  glowIntensity: LightIntensity;
+  /** Animation speed preset. */
+  animationSpeed: AnimationSpeed;
+  /** Derive particle/glow colors from the active theme automatically. */
+  autoThemeColors: boolean;
+  /** Override particle colors (used when `autoThemeColors` is false). */
+  particleColors: string[];
+  /** Override glow colors (used when `autoThemeColors` is false). */
+  glowColors: string[];
+}
+
+export interface PerformanceConfig {
+  /** Global performance tier. */
+  level: PerformanceLevel;
 }
 
 export interface GlassConfig {
   /** Master switch for glassmorphism. */
   enabled: boolean;
-  /** Backdrop blur radius in px (0..40). */
+  /** Blur strength preset. */
+  blurLevel: BlurLevel;
+  /** Custom blur radius in px (used by the advanced control). */
   strength: number;
   /** Backdrop saturation (0.5..2.0, 1 = none). */
   saturation: number;
@@ -92,34 +186,53 @@ export interface GlassConfig {
   borderHighlight: number;
   /** Soft shadow strength (0..1). */
   shadow: number;
-  /** Performance tier; `off` disables blur and shadows entirely. */
-  performanceMode: GlassPerformanceMode;
+}
+
+export interface CustomThemeColors {
+  primary: string;
+  accent: string;
+  background: string;
+  panel: string;
+  text: string;
+  particle: string;
+  glow: string;
+}
+
+export interface CustomThemeConfig {
+  id: string;
+  name: string;
+  /** Built-in theme id used as the starting point. */
+  base: string;
+  colors: CustomThemeColors;
 }
 
 export interface DesktopThemesConfig {
-  /** Selected theme id. */
-  theme: ThemeId;
+  /** Persisted schema version (drives migration). */
+  schemaVersion: number;
+  /** Selected theme id (a built-in id or a custom theme id). */
+  theme: string;
   font: FontConfig;
   appearance: AppearanceConfig;
   wallpaper: WallpaperConfig;
   glass: GlassConfig;
+  effects: EffectsConfig;
+  performance: PerformanceConfig;
+  customThemes: CustomThemeConfig[];
+  /** Recent wallpaper source ids (most recent first). */
+  recentWallpapers: string[];
 }
 
 /** The settings namespace this plugin owns on the Host. */
 export const SETTINGS_NAMESPACE = 'ui-desktop-themes';
 
 /** Top-level fields of the persisted settings section (one write each). */
-export type SettingsField = keyof DesktopThemesConfig;
+export type SettingsField = keyof Omit<DesktopThemesConfig, 'schemaVersion'>;
 
-/**
- * Exported JSON envelope: the `schemaVersion` field lives here for import
- * migration but is intentionally NOT part of the persisted settings section,
- * which already carries its own namespace revisioning.
- */
+/** Current persisted schema version. */
+export const SCHEMA_VERSION = 2;
+
+/** Exported JSON envelope (the `schemaVersion` also lives inside the config). */
 export interface ExportedConfig {
   schemaVersion: number;
   config: DesktopThemesConfig;
 }
-
-/** Current export schema version. */
-export const SCHEMA_VERSION = 1;

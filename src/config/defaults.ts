@@ -1,10 +1,13 @@
 import type {
   AppearanceConfig,
   DesktopThemesConfig,
+  EffectsConfig,
   FontConfig,
   GlassConfig,
+  PerformanceConfig,
   WallpaperConfig,
 } from './types.ts';
+import { SCHEMA_VERSION } from './types.ts';
 
 /**
  * Default configuration. Every value here must round-trip through the
@@ -13,9 +16,10 @@ import type {
  */
 
 export const DEFAULT_FONT: FontConfig = {
-  uiFamily: 'Inter',
-  codeFamily: 'JetBrains Mono',
-  chineseFamily: 'LXGW WenKai',
+  uiPreset: 'system',
+  codePreset: 'jetbrains-mono',
+  uiCustomFamily: '',
+  codeCustomFamily: '',
   fontSize: 14,
   codeFontSize: 13,
   lineHeight: 1.6,
@@ -30,39 +34,72 @@ export const DEFAULT_APPEARANCE: AppearanceConfig = {
   sidebarOpacity: 0.78,
   panelOpacity: 0.84,
   inputOpacity: 0.86,
+  borderRadius: 'standard',
+  contentWidth: 'standard',
   animationsEnabled: true,
 };
 
 export const DEFAULT_WALLPAPER: WallpaperConfig = {
   enabled: false,
+  sourceId: '',
   path: '',
+  name: '',
   fit: 'cover',
   positionX: 50,
   positionY: 50,
   scale: 1,
   opacity: 0.7,
-  blur: 4,
-  overlay: 0.45,
+  blur: 0,
+  overlay: 0.35,
   saturation: 1,
   brightness: 1,
+  tintEnabled: false,
+  tintStrength: 0.35,
+};
+
+export const DEFAULT_EFFECTS: EffectsConfig = {
+  enabled: true,
+  preset: 'starfield',
+  particleCount: 0,
+  particleSize: 2,
+  particleSpeed: 1,
+  particleOpacity: 0.5,
+  connectLines: false,
+  mouseInteraction: false,
+  parallax: false,
+  cursorGlow: false,
+  glowIntensity: 'soft',
+  animationSpeed: 'gentle',
+  autoThemeColors: true,
+  particleColors: [],
+  glowColors: [],
+};
+
+export const DEFAULT_PERFORMANCE: PerformanceConfig = {
+  level: 'balanced',
 };
 
 export const DEFAULT_GLASS: GlassConfig = {
   enabled: true,
+  blurLevel: 'standard',
   strength: 16,
   saturation: 1.1,
   panelOpacity: 0.84,
   borderHighlight: 0.5,
   shadow: 0.3,
-  performanceMode: 'balanced',
 };
 
 export const DEFAULT_CONFIG: DesktopThemesConfig = {
-  theme: 'tokyo-night',
+  schemaVersion: SCHEMA_VERSION,
+  theme: 'quantum-blue',
   font: DEFAULT_FONT,
   appearance: DEFAULT_APPEARANCE,
   wallpaper: DEFAULT_WALLPAPER,
   glass: DEFAULT_GLASS,
+  effects: DEFAULT_EFFECTS,
+  performance: DEFAULT_PERFORMANCE,
+  customThemes: [],
+  recentWallpapers: [],
 };
 
 /** Lower bound enforced for any opacity slider (contrast floor). */
@@ -79,10 +116,19 @@ export const RECOMMENDED_OPACITY = {
 /** A deep, frozen copy of the defaults (safe to hand to callers). */
 export function createDefaultConfig(): DesktopThemesConfig {
   return {
+    schemaVersion: SCHEMA_VERSION,
     theme: DEFAULT_CONFIG.theme,
     font: { ...DEFAULT_FONT },
     appearance: { ...DEFAULT_APPEARANCE },
     wallpaper: { ...DEFAULT_WALLPAPER },
     glass: { ...DEFAULT_GLASS },
+    effects: {
+      ...DEFAULT_EFFECTS,
+      particleColors: [...DEFAULT_EFFECTS.particleColors],
+      glowColors: [...DEFAULT_EFFECTS.glowColors],
+    },
+    performance: { ...DEFAULT_PERFORMANCE },
+    customThemes: [],
+    recentWallpapers: [],
   };
 }

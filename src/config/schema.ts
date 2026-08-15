@@ -10,11 +10,39 @@
  * the Client (the Client re-validates against the wire schema automatically).
  */
 import z from '@deepseek-ai/schemastery';
+import { SCHEMA_VERSION } from './types.ts';
+
+const FIT_MODES = ['cover', 'contain', 'stretch', 'center', 'tile'] as const;
+const BLUR_LEVELS = ['off', 'light', 'standard', 'strong'] as const;
+const PERFORMANCE_LEVELS = ['power-saver', 'balanced', 'quality'] as const;
+const ANIMATION_SPEEDS = ['still', 'gentle', 'standard', 'active'] as const;
+const PARTICLE_DENSITIES = ['off', 'low', 'medium', 'high'] as const;
+const LIGHT_INTENSITIES = ['off', 'soft', 'standard', 'bright'] as const;
+const RADIUS_LEVELS = ['compact', 'standard', 'soft'] as const;
+const WIDTH_LEVELS = ['compact', 'standard', 'wide'] as const;
+const EFFECT_PRESETS = [
+  'none',
+  'tech-data',
+  'starfield',
+  'aurora-flow',
+  'fireflies',
+  'bubbles',
+  'sakura',
+  'gold-dust',
+  'breathing',
+  'custom',
+] as const;
 
 const fontSchema = z.object({
-  uiFamily: z.string().default('Inter'),
-  codeFamily: z.string().default('JetBrains Mono'),
-  chineseFamily: z.string().default('LXGW WenKai'),
+  uiPreset: z.string().default('system'),
+  codePreset: z.string().default('jetbrains-mono'),
+  uiCustomFamily: z.string().default(''),
+  codeCustomFamily: z.string().default(''),
+  // Legacy v1 fields, kept optional so old persisted sections survive host
+  // re-validation; the client migrates them into the preset fields.
+  uiFamily: z.string(),
+  codeFamily: z.string(),
+  chineseFamily: z.string(),
   fontSize: z.number().min(10).max(24).step(1).default(14),
   codeFontSize: z.number().min(9).max(24).step(1).default(13),
   lineHeight: z.number().min(1).max(2.5).step(0.05).default(1.6),
@@ -29,39 +57,90 @@ const appearanceSchema = z.object({
   sidebarOpacity: z.number().min(0.55).max(1).step(0.01).default(0.78),
   panelOpacity: z.number().min(0.55).max(1).step(0.01).default(0.84),
   inputOpacity: z.number().min(0.55).max(1).step(0.01).default(0.86),
+  borderRadius: z.union(RADIUS_LEVELS).default('standard'),
+  contentWidth: z.union(WIDTH_LEVELS).default('standard'),
   animationsEnabled: z.boolean().default(true),
 });
 
 const wallpaperSchema = z.object({
   enabled: z.boolean().default(false),
+  sourceId: z.string().default(''),
   path: z.string().default(''),
-  fit: z.union(['cover', 'contain', 'stretch', 'center', 'tile']).default('cover'),
+  name: z.string().default(''),
+  fit: z.union(FIT_MODES).default('cover'),
   positionX: z.number().min(0).max(100).step(1).default(50),
   positionY: z.number().min(0).max(100).step(1).default(50),
   scale: z.number().min(0.5).max(3).step(0.05).default(1),
   opacity: z.number().min(0).max(1).step(0.01).default(0.7),
-  blur: z.number().min(0).max(50).step(1).default(4),
-  overlay: z.number().min(0).max(1).step(0.01).default(0.45),
+  blur: z.number().min(0).max(50).step(1).default(0),
+  overlay: z.number().min(0).max(1).step(0.01).default(0.35),
   saturation: z.number().min(0).max(2).step(0.05).default(1),
   brightness: z.number().min(0.5).max(1.5).step(0.05).default(1),
+  tintEnabled: z.boolean().default(false),
+  tintStrength: z.number().min(0).max(1).step(0.01).default(0.35),
+});
+
+const effectsSchema = z.object({
+  enabled: z.boolean().default(true),
+  preset: z.union(EFFECT_PRESETS).default('starfield'),
+  particleCount: z.number().min(0).max(400).step(1).default(0),
+  particleSize: z.number().min(1).max(6).step(0.5).default(2),
+  particleSpeed: z.number().min(0.2).max(3).step(0.1).default(1),
+  particleOpacity: z.number().min(0).max(1).step(0.01).default(0.5),
+  connectLines: z.boolean().default(false),
+  mouseInteraction: z.boolean().default(false),
+  parallax: z.boolean().default(false),
+  cursorGlow: z.boolean().default(false),
+  glowIntensity: z.union(LIGHT_INTENSITIES).default('soft'),
+  animationSpeed: z.union(ANIMATION_SPEEDS).default('gentle'),
+  autoThemeColors: z.boolean().default(true),
+  particleColors: z.array(z.string()).default([]),
+  glowColors: z.array(z.string()).default([]),
+});
+
+const performanceSchema = z.object({
+  level: z.union(PERFORMANCE_LEVELS).default('balanced'),
 });
 
 const glassSchema = z.object({
   enabled: z.boolean().default(true),
+  blurLevel: z.union(BLUR_LEVELS).default('standard'),
   strength: z.number().min(0).max(40).step(1).default(16),
   saturation: z.number().min(0.5).max(2).step(0.05).default(1.1),
   panelOpacity: z.number().min(0).max(1).step(0.01).default(0.84),
   borderHighlight: z.number().min(0).max(1).step(0.01).default(0.5),
   shadow: z.number().min(0).max(1).step(0.01).default(0.3),
-  performanceMode: z.union(['off', 'light', 'standard', 'strong', 'custom', 'balanced']).default('balanced'),
+});
+
+const customThemeColorsSchema = z.object({
+  primary: z.string().default('#3b82f6'),
+  accent: z.string().default('#22d3ee'),
+  background: z.string().default('#0b1120'),
+  panel: z.string().default('#131c31'),
+  text: z.string().default('#e6edf7'),
+  particle: z.string().default('#22d3ee'),
+  glow: z.string().default('#3b82f6'),
+});
+
+const customThemeSchema = z.object({
+  id: z.string().default(''),
+  name: z.string().default(''),
+  base: z.string().default('quantum-blue'),
+  colors: customThemeColorsSchema,
 });
 
 export const DesktopThemesSchema = z.object({
-  theme: z.union(['tokyo-night', 'catppuccin-mocha', 'black-gold']).default('tokyo-night'),
+  schemaVersion: z.number().min(1).max(SCHEMA_VERSION).default(SCHEMA_VERSION),
+  // Built-in or custom theme id (custom ids are `custom-<n>`).
+  theme: z.string().default('quantum-blue'),
   font: fontSchema,
   appearance: appearanceSchema,
   wallpaper: wallpaperSchema,
   glass: glassSchema,
+  effects: effectsSchema,
+  performance: performanceSchema,
+  customThemes: z.array(customThemeSchema).default([]),
+  recentWallpapers: z.array(z.string()).default([]),
 });
 
 export type DesktopThemesSchemaType = ReturnType<typeof DesktopThemesSchema>;

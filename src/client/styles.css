@@ -375,3 +375,55 @@
     flex-wrap: wrap;
   }
 }
+
+/* Live effect preview: a colorful backdrop so transparency / glass are
+ * actually visible (a flat background gives the eye nothing to compare). */
+.dth-preview {
+  position: relative;
+  box-sizing: border-box;
+  min-height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 28px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 18% 22%, #7aa2f7 0 26px, transparent 27px),
+    radial-gradient(circle at 82% 28%, #f7768e 0 34px, transparent 35px),
+    radial-gradient(circle at 50% 78%, #9ece6a 0 30px, transparent 31px),
+    radial-gradient(circle at 30% 60%, #e0af68 0 22px, transparent 23px),
+    radial-gradient(circle at 72% 66%, #bb9af7 0 24px, transparent 25px),
+    linear-gradient(135deg, #1a1b26 0%, #3b4261 55%, #1a1b26 100%);
+}
+
+.dth-preview-surface {
+  box-sizing: border-box;
+  min-width: 180px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* background / backdrop-filter / border / shadow are set inline from config */
+}
+
+.dth-preview-text {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.dth-preview-value {
+  font-size: 12px;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+.dth-preview-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+  overflow-wrap: anywhere;
+}

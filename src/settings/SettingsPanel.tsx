@@ -14,6 +14,7 @@ import { THEMES } from '../themes/index.ts';
 import { WALLPAPER_EXTENSIONS } from '../appearance/wallpaper.ts';
 import type { Store } from '../utils/store.ts';
 import { Button, Notice, Section, Select, Slider, Swatch, TextInput, ThemeCard, Toggle } from './controls.tsx';
+import { GlassPreview, TransparencyPreview } from './EffectPreview.tsx';
 import { detectLang, makeTranslator, type I18nKey, type Lang } from './i18n.ts';
 
 export type WallpaperPickResult = { ok: true } | { ok: false; reason: string };
@@ -195,6 +196,8 @@ function TransparencySection(props: {
       <Slider id="dth-tr-sidebar" label={props.t('transparency.sidebar')} min={0.55} max={1} step={0.01} value={appearance.sidebarOpacity} onChange={(v) => setAppearance({ sidebarOpacity: v })} format={(v) => `${Math.round(v * 100)}%`} disabled={!appearance.transparencyEnabled} />
       <Slider id="dth-tr-panel" label={props.t('transparency.panel')} min={0.55} max={1} step={0.01} value={appearance.panelOpacity} onChange={(v) => setAppearance({ panelOpacity: v })} format={(v) => `${Math.round(v * 100)}%`} disabled={!appearance.transparencyEnabled} />
       <Slider id="dth-tr-input" label={props.t('transparency.input')} min={0.55} max={1} step={0.01} value={appearance.inputOpacity} onChange={(v) => setAppearance({ inputOpacity: v })} format={(v) => `${Math.round(v * 100)}%`} disabled={!appearance.transparencyEnabled} />
+      <TransparencyPreview config={props.config} />
+      <Notice tone="info">{props.t('transparency.previewHint')}</Notice>
       <Notice tone="info">{props.t('transparency.warn')}</Notice>
     </Section>
   );
@@ -272,6 +275,8 @@ function GlassSection(props: {
         onChange={(v) => setGlass({ performanceMode: v })}
         disabled={!glass.enabled}
       />
+      <GlassPreview config={props.config} />
+      <Notice tone="info">{props.t('glass.previewHint')}</Notice>
     </Section>
   );
 }
