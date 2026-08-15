@@ -7,9 +7,10 @@
  *  - Honors `prefers-reduced-motion` (renders one static frame, no loop).
  *  - Clamps device pixel ratio per performance tier (avoids high-DPI overshoot).
  *  - Debounces resize; particles never exceed the performance-tier cap.
- *  - Single canvas + single glow element, reused across theme/effect switches
+ *  - Single canvas + glow/cursor layers, reused across theme/effect switches
  *    (never duplicated) and fully removed on dispose.
- *  - `pointer-events: none` and negative z-index keep every layer behind content.
+ *  - `pointer-events: none` and a z-index above the theme background but below
+ *    the `#root` app shell keep every layer behind content.
  */
 
 import type { EffectsConfig, PerformanceLevel } from '../config/types.ts';
@@ -103,6 +104,11 @@ export class EffectsEngine {
   private presetKind: EffectKind = 'none';
   private connectLines = false;
   private glowEnabled = false;
+  private glowColors: string[] = [];
+  private glowAlphaBase = 0;
+  private cursorGlowEnabled = false;
+  private cursorEl: HTMLDivElement | null = null;
+  private time = 0;
   private pointer = { x: -1, y: -1, active: false };
   private resizeTimer: ReturnType<typeof setTimeout> | null = null;
   private cleanup: Array<() => void> = [];
@@ -146,12 +152,18 @@ export class EffectsEngine {
     this.reducedMotion = reducedMotion;
     const meta = getEffectPreset(effects.preset);
     this.presetKind = meta.kind;
-    this.connectLines = effects.connectLines && meta.kind !== 'glow' && meta.kind !== 'none';
     const glowAlpha = GLOW_ALPHA[effects.glowIntensity];
-    this.glowEnabled = effects.enabled && (meta.hasGlow || effects.cursorGlow) && glowAlpha > 0;
+    // Ambient glow is driven by the light-intensity setting, independent of the
+    // particle preset; "breathing" (kind `glow`) renders glow only.
+    const hasGlow = effects.enabled && glowAlpha > 0;
+    const hasParticles = effects.enabled && meta.kind !== 'none' && meta.kind !== 'glow';
+    this.glowEnabled = hasGlow;
+    this.glowColors = colors.glows;
+    this.glowAlphaBase = glowAlpha;
+    this.cursorGlowEnabled = effects.cursorGlow;
+    this.connectLines = effects.connectLines && hasParticles;
 
-    const shouldRun = effects.enabled && this.presetKind !== 'none';
-    if (!shouldRun) {
+    if (!hasParticles && !hasGlow) {
       this.stopLoop();
       this.removeLayers();
       return;
@@ -160,12 +172,14 @@ export class EffectsEngine {
     this.ensureLayers();
     this.resize(performance);
 
-    const level = performance;
-    const target = resolveParticleCount(effects, level, this.width * this.height);
-    this.seedParticles(target, effects, colors);
+    if (hasParticles) {
+      const target = resolveParticleCount(effects, performance, this.width * this.height);
+      this.seedParticles(target, effects, colors);
+    } else {
+      this.particles = [];
+    }
 
-    // Cursor glow is a separate soft radial element.
-    this.applyCursorGlow(effects, colors, glowAlpha);
+    this.applyGlow();
 
     this.startLoop();
   }
@@ -181,6 +195,14 @@ export class EffectsEngine {
   // ---- internals ----------------------------------------------------------
 
   private ensureLayers(): void {
+    // Append the glow layer before the particle canvas so that, at the same
+    // z-index, particles paint on top of the ambient glow.
+    if (this.glowEl === null) {
+      this.glowEl = document.createElement('div');
+      this.glowEl.setAttribute('aria-hidden', 'true');
+      this.glowEl.className = 'dth-effects-glow';
+      document.body.appendChild(this.glowEl);
+    }
     if (this.canvas === null) {
       this.canvas = document.createElement('canvas');
       this.canvas.setAttribute('aria-hidden', 'true');
@@ -188,12 +210,6 @@ export class EffectsEngine {
       const ctx = this.canvas.getContext('2d');
       if (ctx !== null) this.ctx = ctx;
       document.body.appendChild(this.canvas);
-    }
-    if (this.glowEl === null) {
-      this.glowEl = document.createElement('div');
-      this.glowEl.setAttribute('aria-hidden', 'true');
-      this.glowEl.className = 'dth-effects-glow';
-      document.body.appendChild(this.glowEl);
     }
   }
 
@@ -206,6 +222,10 @@ export class EffectsEngine {
     if (this.glowEl !== null) {
       this.glowEl.remove();
       this.glowEl = null;
+    }
+    if (this.cursorEl !== null) {
+      this.cursorEl.remove();
+      this.cursorEl = null;
     }
   }
 
@@ -257,17 +277,52 @@ export class EffectsEngine {
     };
   }
 
-  private applyCursorGlow(effects: EffectsConfig, colors: EffectColors, alpha: number): void {
+  private applyGlow(): void {
     if (this.glowEl === null) return;
-    const cursorAlpha = effects.cursorGlow ? alpha : 0;
-    const baseGlow = this.glowEnabled ? alpha : 0;
-    const glowColor = sample(colors.glows, colors.glows[0] ?? '#3D7EFF');
+    const c = sample(this.glowColors, this.glowColors[0] ?? '#3D7EFF');
     this.glowEl.style.background = [
-      `radial-gradient(circle at 30% 20%, ${withAlpha(glowColor, baseGlow)} 0%, transparent 55%)`,
-      `radial-gradient(circle at 75% 60%, ${withAlpha(glowColor, baseGlow * 0.7)} 0%, transparent 60%)`,
+      `radial-gradient(circle at 30% 20%, ${withAlpha(c, 1)} 0%, transparent 60%)`,
+      `radial-gradient(circle at 72% 62%, ${withAlpha(c, 0.7)} 0%, transparent 62%)`,
     ].join(', ');
-    this.glowEl.style.opacity = String(Math.max(baseGlow, cursorAlpha));
-    this.glowEl.style.setProperty('--dth-cursor-alpha', String(cursorAlpha));
+    this.glowEl.style.opacity = this.glowEnabled ? String(this.glowAlphaBase) : '0';
+
+    if (this.cursorGlowEnabled) {
+      if (this.cursorEl === null) {
+        this.cursorEl = document.createElement('div');
+        this.cursorEl.setAttribute('aria-hidden', 'true');
+        this.cursorEl.className = 'dth-cursor-glow';
+        document.body.appendChild(this.cursorEl);
+      }
+      this.cursorEl.style.background = `radial-gradient(circle, ${withAlpha(c, 0.5)} 0%, transparent 60%)`;
+      this.cursorEl.style.opacity = '0';
+    } else if (this.cursorEl !== null) {
+      this.cursorEl.remove();
+      this.cursorEl = null;
+    }
+  }
+
+  /** Animate the ambient glow (slow breathing) and the cursor-following light. */
+  private animateGlow(staticFrame: boolean): void {
+    if (this.glowEl === null) return;
+    if (!this.glowEnabled) {
+      this.glowEl.style.opacity = '0';
+      return;
+    }
+    let alpha = this.glowAlphaBase;
+    if (!staticFrame && !this.reducedMotion) {
+      const pulse = 0.5 + 0.5 * Math.sin(this.time * 0.8);
+      alpha = this.glowAlphaBase * (0.55 + 0.45 * pulse);
+    }
+    this.glowEl.style.opacity = String(Math.min(1, Math.max(0, alpha)));
+
+    if (this.cursorEl !== null) {
+      if (this.pointer.active) {
+        this.cursorEl.style.transform = `translate(${this.pointer.x}px, ${this.pointer.y}px)`;
+        this.cursorEl.style.opacity = '1';
+      } else {
+        this.cursorEl.style.opacity = '0';
+      }
+    }
   }
 
   private startLoop(): void {
@@ -296,20 +351,22 @@ export class EffectsEngine {
   }
 
   private draw(staticFrame: boolean): void {
-    if (this.ctx === null || this.canvas === null) return;
-    const ctx = this.ctx;
-    const dt = staticFrame ? 0 : 0.016;
-    ctx.clearRect(0, 0, this.width, this.height);
+    if (!staticFrame) this.time += 0.016;
+    if (this.ctx !== null && this.canvas !== null) {
+      const ctx = this.ctx;
+      ctx.clearRect(0, 0, this.width, this.height);
 
-    const mouseActive = this.pointer.active;
-    for (const p of this.particles) {
-      if (!staticFrame) this.step(p, dt, mouseActive);
-      this.paint(ctx, p);
-    }
+      const mouseActive = this.pointer.active;
+      for (const p of this.particles) {
+        if (!staticFrame) this.step(p, 0.016, mouseActive);
+        this.paint(ctx, p);
+      }
 
-    if (this.connectLines && !staticFrame) {
-      this.paintLines(ctx);
+      if (this.connectLines && !staticFrame) {
+        this.paintLines(ctx);
+      }
     }
+    this.animateGlow(staticFrame);
   }
 
   private step(p: Particle, dt: number, mouseActive: boolean): void {

@@ -132,6 +132,7 @@ export function apply(ctx: ClientContext): void {
   const effects = new EffectsEngine();
 
   // ---- Transparency layer management ------------------------------------
+  let activeThemeId: string = store.get().theme;
   let transparencyDisposer: (() => void) | null = null;
   const applyTransparency = (config: DesktopThemesConfig) => {
     if (transparencyDisposer !== null) {
@@ -141,7 +142,7 @@ export function apply(ctx: ClientContext): void {
     if (theme === undefined || !isTransparencyActive(config.appearance)) return;
     transparencyDisposer = theme.overrideTokens(
       OVERRIDE_SOURCE,
-      buildTransparencyOverrides(config.appearance, config.theme, config.wallpaper.enabled, config.customThemes),
+      buildTransparencyOverrides(config.appearance, activeThemeId, config.wallpaper.enabled, config.customThemes),
     );
   };
 
@@ -234,6 +235,7 @@ export function apply(ctx: ClientContext): void {
     applyTransparency(next);
     applyEffects(next);
     if (next.theme !== prev.theme) {
+      activeThemeId = next.theme;
       if (theme !== undefined) {
         try {
           theme.setTheme(next.theme);
@@ -389,6 +391,7 @@ export function apply(ctx: ClientContext): void {
       if (deepEqual(incoming, store.get())) return;
       store.set(incoming);
       syncCustomThemes(incoming);
+      activeThemeId = incoming.theme;
       if (theme !== undefined) {
         try {
           theme.setTheme(incoming.theme);
@@ -406,8 +409,13 @@ export function apply(ctx: ClientContext): void {
   }
 
   // ---- React to theme switches made outside this plugin -------------------
+  // Guard on the active theme id: `overrideTokens` also emits `theme/change`,
+  // and re-applying on those (id-unchanged) events would loop forever.
   if (theme !== undefined) {
-    ctx.on('theme/change', () => {
+    ctx.on('theme/change', (snapshot) => {
+      const id = (snapshot as { active?: { id?: string } })?.active?.id;
+      if (id === undefined || id === activeThemeId) return;
+      activeThemeId = id;
       applyTransparency(store.get());
     });
   }
