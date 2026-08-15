@@ -1,0 +1,4 @@
+# 在 profile 的 cordis.patch.yml 中追加以下内容（若已有 insert 块则并入其列表）
+- insert:
+    - id: desktop-themes
+      name: dsh-desktop-themes

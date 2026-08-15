@@ -1,0 +1,93 @@
+# 安装指南
+
+本插件是一个标准的 DSH **双面插件**（宿主 + 客户端）。它**不是** `dsh.bundle`（不带组合 patch），因此安装 = 依赖安装 + 在 profile 的 `cordis.patch.yml` 注册一行。
+
+## 前置
+
+- Node.js ≥ 20（推荐 24）
+- pnpm（`dsh plugin` 通过它管理 profile 依赖）
+- 已初始化的 `web` profile（首次运行 `dsh web` 会自动初始化）
+
+## 1. 构建
+
+```bash
+cd dsh-desktop-themes
+npm install
+npm run build
+```
+
+## 2. 安装依赖包
+
+**本地路径安装（开发/分发）：**
+
+```bash
+dsh plugin --profile web add file:D:/path/to/dsh-desktop-themes
+```
+
+`dsh plugin` 会把 `file:` 的相对路径锚定到你的当前目录，然后转发给 profile 目录下的 pnpm。
+
+**npm 安装（发布后）：**
+
+```bash
+dsh plugin --profile web add dsh-desktop-themes
+```
+
+> 输出里可能出现一条提示：`dsh-desktop-themes declares no dsh.bundle — installed as a plain dependency`。这是**正常的**：本插件是普通插件而非组合包，不会自动进入 bundle 列表。
+
+## 3. 注册插件行
+
+编辑 profile 的 `cordis.patch.yml`：
+
+- macOS/Linux：`$DSH_HOME/profiles/web/cordis.patch.yml`（默认 `~/.dsh/profiles/web/cordis.patch.yml`）
+- Windows：`%USERPROFILE%\.dsh\profiles\web\cordis.patch.yml`
+
+追加：
+
+```yaml
+- insert:
+    - id: desktop-themes
+      name: dsh-desktop-themes
+```
+
+（若文件已存在其他 `insert:` 块，把这一行加进已有的列表里；没有 `insert:` 块就照上面新建。）
+
+## 4. 重启并验证
+
+```bash
+dsh web
+```
+
+打开 `http://127.0.0.1:3080` → 左下/设置入口 → “设置” → “桌面外观”。
+
+验证：
+
+1. 主题选择器出现 Tokyo Night / Catppuccin Mocha / 黑金 三套主题。
+2. 选择任一主题，界面 token 即时切换。
+3. 修改字体/透明度/壁纸/毛玻璃，实时预览。
+4. 刷新页面后配置仍保留（写入了 `$DSH_HOME/settings.yaml`）。
+
+## 卸载
+
+```bash
+# 1. 从 cordis.patch.yml 删除：
+#      - id: desktop-themes
+#        name: dsh-desktop-themes
+# 2. 移除依赖
+dsh plugin --profile web remove dsh-desktop-themes
+# 3. 重启
+dsh web
+```
+
+## 恢复原始外观
+
+- 移除插件行 + 重启即恢复（插件未改任何宿主文件，所有副作用随 fiber 释放）。
+- 若要同时清掉插件写入的设置，编辑 `$DSH_HOME/settings.yaml`，删除 `ui-desktop-themes:` 分节。
+
+## 排查
+
+| 现象 | 处理 |
+|---|---|
+| 设置里没有“桌面外观” | 检查 `cordis.patch.yml` 行是否写对、`dsh plugin --profile web list` 是否包含该包、重启是否生效 |
+| 页面报“client bundle not found” | 先 `npm run build`，确认 `lib/client.js` 存在 |
+| 主题没有生效 | 确认选择了插件主题（而非内置 浅色/深色/跟随系统）；插件主题 id 为 `tokyo-night` 等 |
+| pnpm 找不到 | 安装 pnpm 后重试 `dsh plugin` |
