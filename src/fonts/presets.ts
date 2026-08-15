@@ -60,6 +60,7 @@ export const UI_FONT_PRESETS: readonly FontPreset[] = [
   { key: 'noto-sans-sc', label: 'Noto Sans SC', family: 'Noto Sans SC', fallbacks: UI_FALLBACKS },
   { key: 'ms-yahei-ui', label: 'Microsoft YaHei UI', family: 'Microsoft YaHei UI', fallbacks: UI_FALLBACKS },
   { key: 'pingfang-sc', label: 'PingFang SC', family: 'PingFang SC', fallbacks: UI_FALLBACKS },
+  { key: 'kaiti', label: 'KaiTi (楷体)', family: 'KaiTi', fallbacks: UI_FALLBACKS },
 ] as const;
 
 export const CODE_FONT_PRESETS: readonly FontPreset[] = [
@@ -128,17 +129,38 @@ export function buildCodeStack(presetKey: string, customFamily: string): string 
 export const FONT_PREVIEW_TEXT = 'DeepSeek Harness · 你好，世界';
 export const CODE_PREVIEW_TEXT = 'const answer = await model.generate();';
 
+let measureCanvas: HTMLCanvasElement | null = null;
+
+/** Measure a probe string under a given `font` shorthand (cached canvas). */
+function measureWidth(font: string): number {
+  if (typeof document === 'undefined') return -1;
+  if (measureCanvas === null) measureCanvas = document.createElement('canvas');
+  const ctx = measureCanvas.getContext('2d');
+  if (ctx === null) return -1;
+  ctx.font = font;
+  return ctx.measureText(FONT_PROBE).width;
+}
+
+/** A probe string whose glyph widths differ sharply between fonts. */
+const FONT_PROBE = 'MmmmIIIIllll0123456789';
+
 /**
- * Best-effort installed check via the Font Loading API. Returns `true` when
- * the family is empty (system default), the API is unavailable, or the check
- * throws — the CSS fallback stack guarantees the text never disappears either
- * way.
+ * Best-effort installed check via canvas width comparison (the most reliable
+ * client-side method). `document.fonts.check` is deliberately avoided because
+ * it can report false negatives for fonts installed in the per-user fonts
+ * directory. The probe is measured against `monospace` and against the target
+ * family followed by `monospace`; if the target is installed the widths
+ * differ, otherwise both fall back to `monospace` and are equal.
  */
 export function isFontAvailable(family: string): boolean {
   if (family.trim().length === 0) return true;
-  if (typeof document === 'undefined' || typeof document.fonts === 'undefined') return true;
+  if (typeof document === 'undefined') return true;
+  const clean = family.replace(/"/g, '');
   try {
-    return document.fonts.check(`16px "${family.replace(/"/g, '')}"`, FONT_PREVIEW_TEXT);
+    const base = measureWidth('20px monospace');
+    const withFont = measureWidth(`20px "${clean}", monospace`);
+    if (base < 0) return true;
+    return Math.abs(withFont - base) > 1;
   } catch {
     return true;
   }

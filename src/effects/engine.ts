@@ -69,6 +69,14 @@ const GLOW_ALPHA: Record<EffectsConfig['glowIntensity'], number> = {
   bright: 0.46,
 };
 
+/** Breathing animation period per animation-speed preset (seconds). */
+const GLOW_PERIOD: Record<EffectsConfig['animationSpeed'], number> = {
+  still: 0,
+  gentle: 8,
+  standard: 6,
+  active: 4,
+};
+
 const DENSITY_FACTOR: Record<EffectsConfig['density'], number> = {
   off: 0,
   low: 0.55,
@@ -106,9 +114,10 @@ export class EffectsEngine {
   private glowEnabled = false;
   private glowColors: string[] = [];
   private glowAlphaBase = 0;
+  private animationSpeed: EffectsConfig['animationSpeed'] = 'gentle';
   private cursorGlowEnabled = false;
   private cursorEl: HTMLDivElement | null = null;
-  private time = 0;
+  private cursorRaf = 0;
   private pointer = { x: -1, y: -1, active: false };
   private resizeTimer: ReturnType<typeof setTimeout> | null = null;
   private cleanup: Array<() => void> = [];
@@ -129,9 +138,11 @@ export class EffectsEngine {
         this.pointer.x = e.clientX;
         this.pointer.y = e.clientY;
         this.pointer.active = true;
+        this.scheduleCursorGlow();
       };
       const onLeave = () => {
         this.pointer.active = false;
+        if (this.cursorEl !== null) this.cursorEl.style.opacity = '0';
       };
       window.addEventListener('pointermove', onPointer, { passive: true });
       window.addEventListener('pointerleave', onLeave);
@@ -141,6 +152,7 @@ export class EffectsEngine {
         window.removeEventListener('pointermove', onPointer);
         window.removeEventListener('pointerleave', onLeave);
         if (this.resizeTimer !== null) clearTimeout(this.resizeTimer);
+        if (this.cursorRaf !== 0) cancelAnimationFrame(this.cursorRaf);
       });
     }
   }
@@ -160,6 +172,7 @@ export class EffectsEngine {
     this.glowEnabled = hasGlow;
     this.glowColors = colors.glows;
     this.glowAlphaBase = glowAlpha;
+    this.animationSpeed = effects.animationSpeed;
     this.cursorGlowEnabled = effects.cursorGlow;
     this.connectLines = effects.connectLines && hasParticles;
 
@@ -284,7 +297,16 @@ export class EffectsEngine {
       `radial-gradient(circle at 30% 20%, ${withAlpha(c, 1)} 0%, transparent 60%)`,
       `radial-gradient(circle at 72% 62%, ${withAlpha(c, 0.7)} 0%, transparent 62%)`,
     ].join(', ');
-    this.glowEl.style.opacity = this.glowEnabled ? String(this.glowAlphaBase) : '0';
+    if (!this.glowEnabled) {
+      this.glowEl.style.opacity = '0';
+      this.glowEl.dataset.breathe = 'false';
+    } else {
+      const breathe = !this.reducedMotion && GLOW_PERIOD[this.animationSpeed] > 0;
+      this.glowEl.style.setProperty('--dth-glow-base', String(this.glowAlphaBase));
+      this.glowEl.style.setProperty('--dth-glow-min', String(this.glowAlphaBase * 0.55));
+      this.glowEl.style.setProperty('--dth-glow-period', `${GLOW_PERIOD[this.animationSpeed] || 6}s`);
+      this.glowEl.dataset.breathe = breathe ? 'true' : 'false';
+    }
 
     if (this.cursorGlowEnabled) {
       if (this.cursorEl === null) {
@@ -301,28 +323,15 @@ export class EffectsEngine {
     }
   }
 
-  /** Animate the ambient glow (slow breathing) and the cursor-following light. */
-  private animateGlow(staticFrame: boolean): void {
-    if (this.glowEl === null) return;
-    if (!this.glowEnabled) {
-      this.glowEl.style.opacity = '0';
-      return;
-    }
-    let alpha = this.glowAlphaBase;
-    if (!staticFrame && !this.reducedMotion) {
-      const pulse = 0.5 + 0.5 * Math.sin(this.time * 0.8);
-      alpha = this.glowAlphaBase * (0.55 + 0.45 * pulse);
-    }
-    this.glowEl.style.opacity = String(Math.min(1, Math.max(0, alpha)));
-
-    if (this.cursorEl !== null) {
-      if (this.pointer.active) {
-        this.cursorEl.style.transform = `translate(${this.pointer.x}px, ${this.pointer.y}px)`;
-        this.cursorEl.style.opacity = '1';
-      } else {
-        this.cursorEl.style.opacity = '0';
-      }
-    }
+  /** Coalesced, main-thread-independent cursor glow position update. */
+  private scheduleCursorGlow(): void {
+    if (this.cursorEl === null || this.cursorRaf !== 0) return;
+    this.cursorRaf = requestAnimationFrame(() => {
+      this.cursorRaf = 0;
+      if (this.cursorEl === null || !this.pointer.active) return;
+      this.cursorEl.style.transform = `translate(${this.pointer.x}px, ${this.pointer.y}px)`;
+      this.cursorEl.style.opacity = '1';
+    });
   }
 
   private startLoop(): void {
@@ -351,22 +360,19 @@ export class EffectsEngine {
   }
 
   private draw(staticFrame: boolean): void {
-    if (!staticFrame) this.time += 0.016;
-    if (this.ctx !== null && this.canvas !== null) {
-      const ctx = this.ctx;
-      ctx.clearRect(0, 0, this.width, this.height);
+    if (this.ctx === null || this.canvas === null) return;
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.width, this.height);
 
-      const mouseActive = this.pointer.active;
-      for (const p of this.particles) {
-        if (!staticFrame) this.step(p, 0.016, mouseActive);
-        this.paint(ctx, p);
-      }
-
-      if (this.connectLines && !staticFrame) {
-        this.paintLines(ctx);
-      }
+    const mouseActive = this.pointer.active;
+    for (const p of this.particles) {
+      if (!staticFrame) this.step(p, 0.016, mouseActive);
+      this.paint(ctx, p);
     }
-    this.animateGlow(staticFrame);
+
+    if (this.connectLines && !staticFrame) {
+      this.paintLines(ctx);
+    }
   }
 
   private step(p: Particle, dt: number, mouseActive: boolean): void {

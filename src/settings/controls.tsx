@@ -5,6 +5,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { quoteFont } from '../fonts/presets.ts';
 
 export interface ThemeCardModel {
   id: string;
@@ -276,7 +277,7 @@ export function FontCard(props: {
   return (
     <button
       type="button"
-      className={`dth-font-card${props.selected ? ' is-selected' : ''}`}
+      className={`dth-font-card${props.selected ? ' is-selected' : ''}${props.installed ? '' : ' is-unavailable'}`}
       aria-pressed={props.selected}
       onClick={props.onSelect}
     >
@@ -286,9 +287,12 @@ export function FontCard(props: {
           {props.installed ? props.installedText : props.fallbackText}
         </span>
       </span>
-      <span className="dth-font-card-preview" style={{ fontFamily: props.family }}>
+      <span
+        className="dth-font-card-preview"
+        style={{ fontFamily: props.family.length > 0 ? quoteFont(props.family) : undefined }}
+      >
         <span className="dth-font-card-line">{props.preview}</span>
-        <code className="dth-font-card-code">{props.codePreview}</code>
+        <code className="dth-font-card-code" style={{ fontFamily: 'inherit' }}>{props.codePreview}</code>
       </span>
     </button>
   );

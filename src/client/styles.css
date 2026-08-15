@@ -396,6 +396,10 @@
   box-shadow: 0 0 0 1px var(--dsw-alias-brand-primary) inset;
 }
 
+.dth-font-card.is-unavailable .dth-font-card-preview {
+  opacity: 0.55;
+}
+
 .dth-font-card-head {
   display: flex;
   align-items: center;
@@ -655,6 +659,18 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  opacity: var(--dth-glow-base, 0.18);
+}
+
+/* The breathing pulse is a compositor-only opacity animation (no per-frame
+ * JS), so it never blocks the main thread or stutters the cursor glow. */
+.dth-effects-glow[data-breathe='true'] {
+  animation: dth-glow-breathe var(--dth-glow-period, 6s) ease-in-out infinite;
+}
+
+@keyframes dth-glow-breathe {
+  0%, 100% { opacity: var(--dth-glow-min, 0.1); }
+  50% { opacity: var(--dth-glow-base, 0.18); }
 }
 
 .dth-cursor-glow {
@@ -760,4 +776,73 @@
   font-size: 12px;
   opacity: 0.85;
   font-variant-numeric: tabular-nums;
+}
+
+/* Live font preview */
+.dth-font-live {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.dth-font-live-line {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--dsw-alias-label-primary);
+  overflow-wrap: anywhere;
+}
+
+.dth-font-live-code {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--dsw-alias-label-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* Compact particle preview */
+.dth-effect-preview {
+  position: relative;
+  height: 110px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.dth-effect-preview-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.dth-preview-dot {
+  position: absolute;
+  border-radius: 50%;
+  animation-name: dth-dot-float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  transform: translate(0, 0);
+}
+
+.dth-effect-preview[data-still='true'] .dth-preview-dot {
+  animation: none;
+}
+
+@keyframes dth-dot-float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(8px, -12px); }
+}
+
+/* Compact glow preview */
+.dth-glow-preview {
+  height: 96px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background-color: var(--dsw-alias-bg-layer-2);
 }

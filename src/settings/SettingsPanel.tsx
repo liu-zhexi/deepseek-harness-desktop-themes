@@ -39,7 +39,7 @@ import {
   Toggle,
   type ThemeCardModel,
 } from './controls.tsx';
-import { GlassPreview, TransparencyPreview } from './EffectPreview.tsx';
+import { GlassPreview, GlowPreview, LiveFontPreview, ParticlesPreview, TransparencyPreview } from './EffectPreview.tsx';
 import { detectLang, makeTranslator, type I18nKey, type Lang, type Translate } from './i18n.ts';
 
 export type WallpaperPickResult = { ok: true } | { ok: false; reason: string };
@@ -241,17 +241,23 @@ function FontSection(props: { config: DesktopThemesConfig; t: Translate; update:
   const font = props.config.font;
   const setFont = (patch: Partial<typeof font>) => props.update(patchTop(props.config, 'font', { ...font, ...patch }));
 
+  const byInstalled = (a: { key: string; family: string }, b: { key: string; family: string }) => {
+    if (a.key === CUSTOM_PRESET_KEY) return 1;
+    if (b.key === CUSTOM_PRESET_KEY) return -1;
+    return Number(isFontAvailable(b.family)) - Number(isFontAvailable(a.family));
+  };
   const uiOptions = [
     ...UI_FONT_PRESETS.map((p) => ({ key: p.key, label: p.key === 'system' ? props.t('font.preset.system') : p.label, family: p.family })),
     { key: CUSTOM_PRESET_KEY, label: props.t('font.custom'), family: font.uiCustomFamily },
-  ];
+  ].sort(byInstalled);
   const codeOptions = [
     ...CODE_FONT_PRESETS.map((p) => ({ key: p.key, label: p.key === 'system-mono' ? props.t('font.preset.systemMono') : p.label, family: p.family })),
     { key: CUSTOM_PRESET_KEY, label: props.t('font.custom'), family: font.codeCustomFamily },
-  ];
+  ].sort(byInstalled);
 
   return (
     <Section title={props.t('font.title')} actions={<Button onClick={() => setFont({ ...DEFAULT_FONT })}>{props.t('font.restore')}</Button>}>
+      <LiveFontPreview config={props.config} />
       <div className="dth-field">
         <div className="dth-field-label"><label>{props.t('font.uiFamily')}</label></div>
         <div className="dth-font-grid">
@@ -415,6 +421,7 @@ function LightSection(props: { config: DesktopThemesConfig; t: Translate; update
   const setEffects = (patch: Partial<typeof effects>) => props.update(patchTop(props.config, 'effects', { ...effects, ...patch }));
   return (
     <Section title={props.t('light.title')}>
+      <GlowPreview config={props.config} />
       <Segmented
         id="dth-light-intensity"
         label={props.t('light.glowIntensity')}
@@ -434,6 +441,7 @@ function ParticlesSection(props: { config: DesktopThemesConfig; t: Translate; up
   const setEffects = (patch: Partial<typeof effects>) => props.update(patchTop(props.config, 'effects', { ...effects, ...patch }));
   return (
     <Section title={props.t('particles.title')}>
+      <ParticlesPreview config={props.config} />
       <Toggle id="dth-p-enabled" label={props.t('particles.enabled')} checked={effects.enabled} onChange={(v) => setEffects({ enabled: v })} />
       <Select
         id="dth-p-preset"
