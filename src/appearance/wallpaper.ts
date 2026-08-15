@@ -2,17 +2,18 @@
  * Custom wallpaper: file validation and CSS generation.
  *
  * The wallpaper is rendered as a fixed `body::before` layer (plus a
- * `body::after` dark overlay). The image source is a browser `blob:` URL from
- * the settings picker, or an http(s) URL — never an executed resource: the
- * URL is only ever placed inside `background-image`, so no image content is
- * parsed or run. On load failure the presenter clears the layer and falls back
- * to the theme background.
+ * `body::after` overlay/tint). The image source is a browser `blob:` URL
+ * derived from an IndexedDB blob, or an http(s) URL — never an executed
+ * resource: the URL is only ever placed inside `background-image`. On load
+ * failure the presenter clears the layer and falls back to the theme
+ * background.
  */
 
 import type { WallpaperConfig } from '../config/types.ts';
+import { rgba } from '../utils/color.ts';
 
 /** Allowed image extensions (lowercase, no dot). */
-export const WALLPAPER_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'] as const;
+export const WALLPAPER_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif'] as const;
 
 /** Reasonable ceiling to avoid freezing the renderer on pathological files. */
 export const MAX_WALLPAPER_BYTES = 25 * 1024 * 1024;
@@ -36,7 +37,7 @@ export function extensionOf(name: string): string {
 export function validateWallpaperFile(file: WallpaperFileLike): WallpaperValidation {
   const ext = extensionOf(file.name);
   const typeOk = (WALLPAPER_EXTENSIONS as readonly string[]).includes(ext);
-  const mimeOk = /^image\/(png|jpeg|webp)$/.test(file.type);
+  const mimeOk = /^image\/(png|jpeg|gif|webp)$/.test(file.type);
   if (!typeOk && !mimeOk) {
     return { ok: false, reason: 'unsupported-type' };
   }
@@ -73,7 +74,7 @@ function backgroundSizeFor(fit: WallpaperConfig['fit']): { size: string; repeat:
 }
 
 /** Build the wallpaper CSS (empty string when disabled or without a source). */
-export function buildWallpaperCss(wallpaper: WallpaperConfig): string {
+export function buildWallpaperCss(wallpaper: WallpaperConfig, accent?: string): string {
   if (!wallpaper.enabled || wallpaper.path.length === 0) return '';
   const { size, repeat } = backgroundSizeFor(wallpaper.fit);
   const url = `url("${escapeCssUrl(wallpaper.path)}")`;
@@ -85,12 +86,18 @@ export function buildWallpaperCss(wallpaper: WallpaperConfig): string {
     .filter(Boolean)
     .join(' ');
 
+  // Overlay + optional accent tint (a translucent accent wash over the dark
+  // overlay keeps text contrast while nudging the wallpaper toward the theme).
+  const overlayLayers = wallpaper.tintEnabled && accent !== undefined
+    ? [`${rgba(accent, wallpaper.tintStrength * 0.55)}`, `rgba(0, 0, 0, ${wallpaper.overlay})`]
+    : [`rgba(0, 0, 0, ${wallpaper.overlay})`];
+
   const rules = [
     'body::before {',
     '  content: "";',
     '  position: fixed;',
     '  inset: 0;',
-    '  z-index: -2;',
+    '  z-index: -4;',
     '  background-image: ' + url + ';',
     '  background-size: ' + size + ';',
     '  background-repeat: ' + repeat + ';',
@@ -105,8 +112,8 @@ export function buildWallpaperCss(wallpaper: WallpaperConfig): string {
     '  content: "";',
     '  position: fixed;',
     '  inset: 0;',
-    '  z-index: -1;',
-    '  background: rgba(0, 0, 0, ' + wallpaper.overlay + ');',
+    '  z-index: -3;',
+    '  background: ' + overlayLayers.join(', ') + ';',
     '  pointer-events: none;',
     '}',
   ].filter((line) => line !== '');

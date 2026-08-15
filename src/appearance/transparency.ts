@@ -10,9 +10,9 @@
  * or leave the input area unusable (only background colors change).
  */
 
-import type { AppearanceConfig } from '../config/types.ts';
+import type { AppearanceConfig, CustomThemeConfig } from '../config/types.ts';
 import { rgba } from '../utils/color.ts';
-import { getTheme } from '../themes/index.ts';
+import { resolvePalette } from '../themes/index.ts';
 
 export interface SurfaceColors {
   base: string;
@@ -42,8 +42,8 @@ const BUILTIN_LIGHT: SurfaceColors = {
   sidebar: '#fafafa',
 };
 
-/** Resolve the surface colors for a theme id (my themes + built-in pair). */
-export function surfaceColorsFor(themeId: string): SurfaceColors {
+/** Resolve the surface colors for a theme id (plugin themes + built-in pair). */
+export function surfaceColorsFor(themeId: string, customThemes: readonly CustomThemeConfig[] = []): SurfaceColors {
   switch (themeId) {
     case 'light':
       return BUILTIN_LIGHT;
@@ -51,15 +51,15 @@ export function surfaceColorsFor(themeId: string): SurfaceColors {
     case 'system':
       return BUILTIN_DARK;
     default: {
-      const theme = getTheme(themeId);
-      if (theme !== undefined) {
+      const palette = resolvePalette(themeId, customThemes);
+      if (palette !== undefined) {
         return {
-          base: theme.palette.bgBase,
-          layer1: theme.palette.bgSurface,
-          layer2: theme.palette.bgSurface2,
-          layer3: theme.palette.bgSurface3,
-          overlay: theme.palette.bgOverlay,
-          sidebar: theme.palette.sidebarFill,
+          base: palette.bgBase,
+          layer1: palette.bgSurface,
+          layer2: palette.bgSurface2,
+          layer3: palette.bgSurface3,
+          overlay: palette.bgOverlay,
+          sidebar: palette.sidebarFill,
         };
       }
       return BUILTIN_DARK;
@@ -91,8 +91,9 @@ export function buildTransparencyOverrides(
   appearance: AppearanceConfig,
   themeId: string,
   wallpaperEnabled: boolean,
+  customThemes: readonly CustomThemeConfig[] = [],
 ): Record<string, { light: string; dark: string }> {
-  const colors = surfaceColorsFor(themeId);
+  const colors = surfaceColorsFor(themeId, customThemes);
   const overrides: Record<string, { light: string; dark: string }> = {};
   for (const entry of TOKEN_OPACITY) {
     const opacity = wallpaperEnabled && entry.token === '--dsw-alias-bg-base' ? 0 : entry.opacity(appearance);

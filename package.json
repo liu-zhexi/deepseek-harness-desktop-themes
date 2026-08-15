@@ -1,7 +1,7 @@
 {
   "name": "dsh-desktop-themes",
-  "version": "1.0.0",
-  "description": "DeepSeek Harness Desktop Themes — an installable, configurable, uninstallable desktop appearance plugin: fonts, themes, transparency, custom wallpaper, and glassmorphism.",
+  "version": "1.1.0",
+  "description": "DeepSeek Harness Desktop Themes — an installable, configurable, uninstallable desktop appearance plugin: six signature themes, font presets, live particle/glow effects, durable custom wallpaper, glassmorphism, and custom color themes.",
   "keywords": [
     "deepseek-harness",
     "dsh",

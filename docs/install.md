@@ -57,14 +57,14 @@ dsh plugin --profile web add dsh-desktop-themes
 dsh web
 ```
 
-打开 `http://127.0.0.1:3080` → 左下/设置入口 → “设置” → “桌面外观”。
+打开 `http://127.0.0.1:3080` → “设置” → “桌面外观”。
 
 验证：
 
-1. 主题选择器出现 Tokyo Night / Catppuccin Mocha / 黑金 三套主题。
+1. 主题选择器出现量子蓝 / 极光幻境 / 薄荷清风 / 樱雾 / 日落流光 / 黑金星穹 六套主题。
 2. 选择任一主题，界面 token 即时切换。
-3. 修改字体/透明度/壁纸/毛玻璃，实时预览。
-4. 刷新页面后配置仍保留（写入了 `$DSH_HOME/settings.yaml`）。
+3. 修改字体/透明度/壁纸/毛玻璃/粒子，实时预览。
+4. 刷新页面后配置仍保留（写入 `$DSH_HOME/settings.yaml`）；壁纸跨会话保留（IndexedDB）。
 
 ## 卸载
 
@@ -82,6 +82,7 @@ dsh web
 
 - 移除插件行 + 重启即恢复（插件未改任何宿主文件，所有副作用随 fiber 释放）。
 - 若要同时清掉插件写入的设置，编辑 `$DSH_HOME/settings.yaml`，删除 `ui-desktop-themes:` 分节。
+- 壁纸字节存于浏览器 IndexedDB 数据库 `dsh-desktop-themes`，可在浏览器 DevTools → Application → IndexedDB 中手动删除。
 
 ## 排查
 
@@ -89,5 +90,6 @@ dsh web
 |---|---|
 | 设置里没有“桌面外观” | 检查 `cordis.patch.yml` 行是否写对、`dsh plugin --profile web list` 是否包含该包、重启是否生效 |
 | 页面报“client bundle not found” | 先 `npm run build`，确认 `lib/client.js` 存在 |
-| 主题没有生效 | 确认选择了插件主题（而非内置 浅色/深色/跟随系统）；插件主题 id 为 `tokyo-night` 等 |
+| 主题没有生效 | 确认选择了插件主题（而非内置 浅色/深色/跟随系统）；插件主题 id 为 `quantum-blue` 等 |
+| 壁纸刷新后丢失 | 确认浏览器未禁用 IndexedDB / 未处于无痕模式；无 IndexedDB 时壁纸为会话级 |
 | pnpm 找不到 | 安装 pnpm 后重试 `dsh plugin` |

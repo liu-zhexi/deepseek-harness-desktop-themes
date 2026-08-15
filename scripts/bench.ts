@@ -50,10 +50,10 @@ bench('glass resolve + CSS build', 5000, () => {
   resolveGlass(DEFAULT.glass);
   buildGlassCss(DEFAULT.glass, true);
 });
-bench('transparency overrides build', 5000, () => buildTransparencyOverrides(DEFAULT.appearance, 'tokyo-night', false));
+bench('transparency overrides build', 5000, () => buildTransparencyOverrides(DEFAULT.appearance, 'quantum-blue', false));
 bench('config coercion (invalid input)', 5000, () => coerceConfig({ theme: 'bad', font: { fontSize: 999 } }));
 bench('config import + migration', 5000, () =>
-  importConfig({ schemaVersion: 0, config: { themeId: 'black-gold', appearance: { windowOpacity: 0.9 } } }),
+  importConfig({ schemaVersion: 1, config: { themeId: 'black-gold', appearance: { windowOpacity: 0.9 } } }),
 );
 
 console.log('');

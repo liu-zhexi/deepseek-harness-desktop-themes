@@ -83,6 +83,7 @@ const wallpaperSchema = z.object({
 const effectsSchema = z.object({
   enabled: z.boolean().default(true),
   preset: z.union(EFFECT_PRESETS).default('starfield'),
+  density: z.union(PARTICLE_DENSITIES).default('medium'),
   particleCount: z.number().min(0).max(400).step(1).default(0),
   particleSize: z.number().min(1).max(6).step(0.5).default(2),
   particleSpeed: z.number().min(0.2).max(3).step(0.1).default(1),
@@ -105,7 +106,7 @@ const performanceSchema = z.object({
 const glassSchema = z.object({
   enabled: z.boolean().default(true),
   blurLevel: z.union(BLUR_LEVELS).default('standard'),
-  strength: z.number().min(0).max(40).step(1).default(16),
+  strength: z.number().min(0).max(40).step(1).default(0),
   saturation: z.number().min(0.5).max(2).step(0.05).default(1.1),
   panelOpacity: z.number().min(0).max(1).step(0.01).default(0.84),
   borderHighlight: z.number().min(0).max(1).step(0.01).default(0.5),

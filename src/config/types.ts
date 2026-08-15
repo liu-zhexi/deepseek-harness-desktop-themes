@@ -138,7 +138,9 @@ export interface EffectsConfig {
   enabled: boolean;
   /** Selected effect preset. */
   preset: EffectPresetId;
-  /** Explicit particle count; 0 = auto (derived from area + performance tier). */
+  /** Particle density preset (off/low/medium/high). */
+  density: ParticleDensity;
+  /** Explicit particle count; 0 = auto (derived from density + area + tier). */
   particleCount: number;
   /** Particle size (1..6, abstract units). */
   particleSize: number;

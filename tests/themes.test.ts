@@ -1,21 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { THEMES, getTheme, isThemeId, bgBaseForTheme } from '../src/themes/index.ts';
+import { THEMES, getTheme, isBuiltinTheme, bgBaseForTheme, resolvePalette, buildCustomThemeDefinition } from '../src/themes/index.ts';
 import { buildThemeTokens } from '../src/themes/palette.ts';
 
-test('the registry exposes exactly three themes with distinct ids', () => {
+test('the registry exposes exactly six themes with distinct ids', () => {
   assert.deepEqual(
     THEMES.map((t) => t.id).sort(),
-    ['black-gold', 'catppuccin-mocha', 'tokyo-night'].sort(),
+    ['aurora-dream', 'mint-breeze', 'obsidian-gold', 'quantum-blue', 'sakura-mist', 'sunset-flow'].sort(),
   );
 });
 
-test('every theme definition is a dark scheme with a full token set', () => {
+test('every theme has a full token set and a valid color scheme', () => {
   for (const theme of THEMES) {
-    assert.equal(theme.definition.colorScheme, 'dark');
+    assert.ok(theme.definition.colorScheme === 'dark' || theme.definition.colorScheme === 'light');
     const tokens = theme.definition.tokens;
-    // A representative sample of the alias layer must be present.
     for (const token of [
       '--dsw-alias-bg-base',
       '--dsw-alias-bg-layer-1',
@@ -25,6 +24,8 @@ test('every theme definition is a dark scheme with a full token set', () => {
       '--dsw-alias-state-error-primary',
       '--dsw-alias-markdown-code-block',
       '--dsw-specific-sidebar-fill',
+      '--dth-shadow-color',
+      '--dth-glow-color',
     ]) {
       assert.ok(token in tokens, `${theme.id} is missing ${token}`);
       assert.match(tokens[token], /^(#|rgb|rgba)/);
@@ -32,16 +33,36 @@ test('every theme definition is a dark scheme with a full token set', () => {
   }
 });
 
-test('token values differ across the three themes', () => {
-  const bases = new Set(THEMES.map((t) => buildThemeTokens(t.palette)['--dsw-alias-bg-base']));
-  assert.equal(bases.size, 3);
+test('light themes use light scheme and dark themes use dark scheme', () => {
+  assert.equal(getTheme('mint-breeze')?.definition.colorScheme, 'light');
+  assert.equal(getTheme('sakura-mist')?.definition.colorScheme, 'light');
+  assert.equal(getTheme('quantum-blue')?.definition.colorScheme, 'dark');
 });
 
-test('getTheme / isThemeId / bgBaseForTheme behave for known and unknown ids', () => {
-  assert.equal(getTheme('tokyo-night')?.id, 'tokyo-night');
+test('token values differ across the six themes', () => {
+  const bases = new Set(THEMES.map((t) => buildThemeTokens(t.palette)['--dsw-alias-bg-base']));
+  assert.equal(bases.size, 6);
+});
+
+test('getTheme / isBuiltinTheme / bgBaseForTheme behave for known and unknown ids', () => {
+  assert.equal(getTheme('quantum-blue')?.id, 'quantum-blue');
   assert.equal(getTheme('missing'), undefined);
-  assert.equal(isThemeId('black-gold'), true);
-  assert.equal(isThemeId('system'), false);
+  assert.equal(isBuiltinTheme('obsidian-gold'), true);
+  assert.equal(isBuiltinTheme('system'), false);
   assert.equal(bgBaseForTheme('light'), '#ffffff');
   assert.match(bgBaseForTheme('dark'), /^#/);
+});
+
+test('resolvePalette resolves built-in and custom themes', () => {
+  assert.equal(resolvePalette('quantum-blue')?.bgBase, '#0A0E1A');
+  const custom = resolvePalette('custom-1', [{ id: 'custom-1', name: 'X', base: 'quantum-blue', colors: { primary: '#123456', accent: '#654321', background: '#0a0a0a', panel: '#111111', text: '#ffffff', particle: '#123456', glow: '#654321' } }]);
+  assert.equal(custom?.bgBase, '#0a0a0a');
+  assert.equal(resolvePalette('missing'), undefined);
+});
+
+test('buildCustomThemeDefinition builds a register-able definition', () => {
+  const def = buildCustomThemeDefinition({ id: 'custom-1', name: 'X', base: 'mint-breeze', colors: { primary: '#123456', accent: '#654321', background: '#ffffff', panel: '#eeeeee', text: '#111111', particle: '#123456', glow: '#654321' } });
+  assert.equal(def.id, 'custom-1');
+  assert.equal(def.colorScheme, 'light');
+  assert.ok('--dsw-alias-bg-base' in def.tokens);
 });

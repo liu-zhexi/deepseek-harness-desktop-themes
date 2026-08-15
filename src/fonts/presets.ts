@@ -97,7 +97,7 @@ export function resolveCodeFamily(presetKey: string, customFamily: string): stri
 
 /** Wrap a font name in quotes when it contains anything but plain identifiers. */
 export function quoteFont(name: string): string {
-  return /^[a-zA-Z0-9][a-zA-Z0-9 -]*$/.test(name) ? name : `"${name}"`;
+  return /^[a-zA-Z0-9-]+$/.test(name) ? name : `"${name}"`;
 }
 
 function buildStack(primary: string, fallbacks: readonly string[]): string {

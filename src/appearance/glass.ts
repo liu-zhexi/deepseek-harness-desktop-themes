@@ -22,31 +22,20 @@ export interface ResolvedGlass {
 }
 
 const TIER_BLUR: Record<string, number> = {
+  off: 0,
   light: 8,
   standard: 16,
   strong: 24,
 };
 
-/** Resolve the effective glass parameters from the configured mode + strength. */
+/** Resolve the effective glass parameters from the configured blur level. */
 export function resolveGlass(glass: GlassConfig): ResolvedGlass {
-  let blurPx: number;
-  let applyBlur: boolean;
-  switch (glass.performanceMode) {
-    case 'off':
-      blurPx = 0;
-      applyBlur = false;
-      break;
-    case 'light':
-    case 'standard':
-    case 'strong':
-      blurPx = TIER_BLUR[glass.performanceMode];
-      applyBlur = true;
-      break;
-    default: // 'custom' | 'balanced'
-      blurPx = glass.strength;
-      applyBlur = glass.strength > 0;
-      break;
-  }
+  const tierRadius = TIER_BLUR[glass.blurLevel] ?? TIER_BLUR.standard;
+  // `strength` is the advanced custom radius: when it differs from the tier it
+  // overrides the preset (except when blur is explicitly off).
+  const customOverride = glass.strength > 0 && glass.strength !== tierRadius && glass.blurLevel !== 'off';
+  const blurPx = customOverride ? glass.strength : tierRadius;
+  const applyBlur = blurPx > 0;
   const shadowStrength = applyBlur ? glass.shadow : 0;
   return {
     blurPx,
@@ -76,7 +65,6 @@ export function buildGlassCss(glass: GlassConfig, supported: boolean): string {
   const resolved = resolveGlass(glass);
 
   if (!glass.enabled || !resolved.applyBlur || !supported) {
-    // Solid fallback (also the "no blur / performance mode" path).
     return [
       '.dth-glass {',
       '  background: rgba(17, 17, 19, ' + resolved.panelOpacity + ');',

@@ -213,6 +213,7 @@ function coerceEffects(value: unknown): EffectsConfig {
   return {
     enabled: asBoolean(src.enabled, DEFAULT_EFFECTS.enabled),
     preset: asEnum(src.preset, EFFECT_PRESETS, DEFAULT_EFFECTS.preset),
+    density: asEnum(src.density, DENSITIES, DEFAULT_EFFECTS.density),
     particleCount: asNumber(src.particleCount, DEFAULT_EFFECTS.particleCount, 0, 400, 1),
     particleSize: asNumber(src.particleSize, DEFAULT_EFFECTS.particleSize, 1, 6, 0.5),
     particleSpeed: asNumber(src.particleSpeed, DEFAULT_EFFECTS.particleSpeed, 0.2, 3, 0.1),
@@ -415,6 +416,10 @@ const MIGRATIONS: Record<number, MigrationStep> = {
       else if (mode === 'light') glass.blurLevel = 'light';
       else if (mode === 'strong') glass.blurLevel = 'strong';
       else glass.blurLevel = 'standard';
+      // Preset tiers carry no custom-radius override (strength 0 = follow preset).
+      if (mode === 'off' || mode === 'light' || mode === 'standard' || mode === 'strong') {
+        glass.strength = 0;
+      }
       delete glass.performanceMode;
       next.glass = glass;
     }

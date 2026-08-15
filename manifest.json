@@ -3,8 +3,8 @@
   "name": "DeepSeek Harness Desktop Themes",
   "id": "dsh-desktop-themes",
   "short_name": "Desktop Themes",
-  "description": "Installable desktop appearance plugin for DeepSeek Harness: fonts, themes, transparency, custom wallpaper, and glassmorphism.",
-  "version": "1.0.0",
+  "description": "Installable desktop appearance plugin for DeepSeek Harness: six signature themes, font presets, live particle/glow effects, durable custom wallpaper, glassmorphism, and custom color themes.",
+  "version": "1.1.0",
   "author": "dsh-desktop-themes contributors",
   "license": "MIT",
   "entry": {
@@ -14,9 +14,11 @@
   "capabilities": [
     "theme",
     "font",
+    "particles",
     "transparency",
     "wallpaper",
     "glassmorphism",
+    "custom-theme",
     "settings-section"
   ],
   "platforms": ["windows", "macos", "linux"],

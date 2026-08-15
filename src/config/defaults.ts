@@ -60,6 +60,7 @@ export const DEFAULT_WALLPAPER: WallpaperConfig = {
 export const DEFAULT_EFFECTS: EffectsConfig = {
   enabled: true,
   preset: 'starfield',
+  density: 'medium',
   particleCount: 0,
   particleSize: 2,
   particleSpeed: 1,
@@ -82,7 +83,7 @@ export const DEFAULT_PERFORMANCE: PerformanceConfig = {
 export const DEFAULT_GLASS: GlassConfig = {
   enabled: true,
   blurLevel: 'standard',
-  strength: 16,
+  strength: 0,
   saturation: 1.1,
   panelOpacity: 0.84,
   borderHighlight: 0.5,

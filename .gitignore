@@ -4,3 +4,5 @@ lib/
 .DS_Store
 dist/
 coverage/
+*.tgz
+*.tmp

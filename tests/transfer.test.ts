@@ -6,13 +6,13 @@ import { createDefaultConfig } from '../src/config/defaults.ts';
 
 test('export → import round-trips a config', () => {
   const original = createDefaultConfig();
-  original.theme = 'catppuccin-mocha';
+  original.theme = 'aurora-dream';
   original.font.codeFontSize = 15;
-  original.glass.strength = 24;
+  original.glass.blurLevel = 'strong';
 
   const json = exportConfigJson(original);
   const parsed = JSON.parse(json);
-  assert.equal(parsed.schemaVersion, 1);
+  assert.equal(parsed.schemaVersion, 2);
 
   const result = parseImportedConfig(json);
   assert.equal(result.ok, true);

@@ -154,8 +154,10 @@ export function ensureContrast(fg: string, bg: string, minRatio = 4.5): string {
   let current = fg;
   let ratio = contrastRatio(current, bg);
   let guard = 0;
-  const darken = relativeLuminance(current) > relativeLuminance(bg);
-  while (ratio < minRatio && guard < 60) {
+  // Push the foreground away from the background: a darker-than-bg color gets
+  // darker, a lighter-than-bg color gets lighter.
+  const darken = relativeLuminance(current) < relativeLuminance(bg);
+  while (ratio < minRatio && guard < 80) {
     current = darken ? adjustLightness(current, -0.03) : adjustLightness(current, 0.03);
     ratio = contrastRatio(current, bg);
     guard += 1;

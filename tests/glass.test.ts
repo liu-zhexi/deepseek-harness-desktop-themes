@@ -4,15 +4,20 @@ import assert from 'node:assert/strict';
 import { buildGlassCss, resolveGlass } from '../src/appearance/glass.ts';
 import { DEFAULT_GLASS } from '../src/config/defaults.ts';
 
-test('resolveGlass maps performance tiers to blur radii', () => {
-  assert.equal(resolveGlass({ ...DEFAULT_GLASS, performanceMode: 'light' }).blurPx, 8);
-  assert.equal(resolveGlass({ ...DEFAULT_GLASS, performanceMode: 'standard' }).blurPx, 16);
-  assert.equal(resolveGlass({ ...DEFAULT_GLASS, performanceMode: 'strong' }).blurPx, 24);
-  assert.equal(resolveGlass({ ...DEFAULT_GLASS, performanceMode: 'custom', strength: 32 }).blurPx, 32);
+test('resolveGlass maps blur levels to blur radii', () => {
+  assert.equal(resolveGlass({ ...DEFAULT_GLASS, blurLevel: 'light' }).blurPx, 8);
+  assert.equal(resolveGlass({ ...DEFAULT_GLASS, blurLevel: 'standard' }).blurPx, 16);
+  assert.equal(resolveGlass({ ...DEFAULT_GLASS, blurLevel: 'strong' }).blurPx, 24);
+  assert.equal(resolveGlass({ ...DEFAULT_GLASS, blurLevel: 'off' }).blurPx, 0);
+});
+
+test('resolveGlass honors the advanced custom strength override', () => {
+  const resolved = resolveGlass({ ...DEFAULT_GLASS, blurLevel: 'standard', strength: 32 });
+  assert.equal(resolved.blurPx, 32);
 });
 
 test('resolveGlass disables blur and shadow in off mode', () => {
-  const resolved = resolveGlass({ ...DEFAULT_GLASS, performanceMode: 'off', shadow: 0.8 });
+  const resolved = resolveGlass({ ...DEFAULT_GLASS, blurLevel: 'off', shadow: 0.8 });
   assert.equal(resolved.applyBlur, false);
   assert.equal(resolved.blurPx, 0);
   assert.equal(resolved.shadowStrength, 0);

@@ -5,7 +5,20 @@
  */
 
 import type { ReactNode } from 'react';
-import type { DesktopTheme } from '../themes/index.ts';
+
+export interface ThemeCardModel {
+  id: string;
+  name: string;
+  description: string;
+  tag: string;
+  colors: {
+    bg: string;
+    panel: string;
+    text: string;
+    accent: string;
+    particles: string[];
+  };
+}
 
 export function Section(props: { title: string; children: ReactNode; actions?: ReactNode }) {
   return (
@@ -88,6 +101,35 @@ export function Slider(props: {
   );
 }
 
+export function Segmented<T extends string>(props: {
+  id: string;
+  label: string;
+  value: T;
+  options: ReadonlyArray<{ value: T; label: string }>;
+  onChange: (v: T) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Field id={props.id} label={props.label}>
+      <div className="dth-segmented" role="radiogroup" aria-label={props.label}>
+        {props.options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={props.value === option.value}
+            className={`dth-seg${props.value === option.value ? ' is-active' : ''}`}
+            onClick={() => props.onChange(option.value)}
+            disabled={props.disabled}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
 export function Select<T extends string>(props: {
   id: string;
   label: string;
@@ -138,6 +180,50 @@ export function TextInput(props: {
   );
 }
 
+function normalizeHex(value: string): string {
+  const trimmed = value.trim().replace(/^#/, '');
+  if (/^[0-9a-fA-F]{6}$/.test(trimmed)) return `#${trimmed}`;
+  return '#000000';
+}
+
+export function ColorPicker(props: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const safe = normalizeHex(props.value);
+  return (
+    <Field id={props.id} label={props.label}>
+      <div className="dth-color">
+        <input
+          id={props.id}
+          type="color"
+          className="dth-color-swatch"
+          value={safe}
+          onChange={(event) => props.onChange(event.currentTarget.value)}
+        />
+        <input
+          type="text"
+          className="dth-input dth-color-text"
+          value={props.value}
+          onChange={(event) => props.onChange(event.currentTarget.value)}
+        />
+      </div>
+    </Field>
+  );
+}
+
+export function ColorSwatches(props: { colors: string[]; onPick: (v: string) => void }) {
+  return (
+    <div className="dth-swatches" aria-hidden="true">
+      {props.colors.map((color) => (
+        <button key={color} type="button" className="dth-swatches-chip" style={{ background: color }} onClick={() => props.onPick(color)} />
+      ))}
+    </div>
+  );
+}
+
 export function Button(props: { onClick: () => void; children: ReactNode; variant?: 'primary' | 'ghost' | 'danger'; title?: string }) {
   const variant = props.variant ?? 'ghost';
   return (
@@ -147,8 +233,8 @@ export function Button(props: { onClick: () => void; children: ReactNode; varian
   );
 }
 
-export function ThemeCard(props: { theme: DesktopTheme; selected: boolean; onSelect: () => void }) {
-  const p = props.theme.palette;
+export function ThemeCard(props: { theme: ThemeCardModel; selected: boolean; onSelect: () => void }) {
+  const c = props.theme.colors;
   return (
     <button
       type="button"
@@ -156,14 +242,54 @@ export function ThemeCard(props: { theme: DesktopTheme; selected: boolean; onSel
       aria-pressed={props.selected}
       onClick={props.onSelect}
     >
-      <span className="dth-theme-card-swatches" aria-hidden="true">
-        <span style={{ background: p.bgBase }} />
-        <span style={{ background: p.bgSurface }} />
-        <span style={{ background: p.accent }} />
-        <span style={{ background: p.textPrimary }} />
+      <span className="dth-theme-card-preview" style={{ background: c.bg }} aria-hidden="true">
+        <span className="dth-theme-card-panel" style={{ background: c.panel, color: c.text }}>
+          <span className="dth-theme-card-text" style={{ background: c.text }} />
+          <span className="dth-theme-card-accent" style={{ background: c.accent }} />
+        </span>
+        <span className="dth-theme-card-particles">
+          {c.particles.slice(0, 4).map((color, i) => (
+            <i key={i} style={{ background: color }} />
+          ))}
+        </span>
       </span>
-      <span className="dth-theme-card-name">{props.theme.name}</span>
+      <span className="dth-theme-card-meta">
+        <span className="dth-theme-card-name">{props.theme.name}</span>
+        <span className="dth-theme-card-tag">{props.theme.tag}</span>
+      </span>
       <span className="dth-theme-card-desc">{props.theme.description}</span>
+    </button>
+  );
+}
+
+export function FontCard(props: {
+  label: string;
+  family: string;
+  installed: boolean;
+  selected: boolean;
+  onSelect: () => void;
+  installedText: string;
+  fallbackText: string;
+  preview: string;
+  codePreview: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={`dth-font-card${props.selected ? ' is-selected' : ''}`}
+      aria-pressed={props.selected}
+      onClick={props.onSelect}
+    >
+      <span className="dth-font-card-head">
+        <span className="dth-font-card-name">{props.label}</span>
+        <span className={`dth-font-badge${props.installed ? ' is-installed' : ''}`}>
+          {props.installed ? props.installedText : props.fallbackText}
+        </span>
+      </span>
+      <span className="dth-font-card-preview" style={{ fontFamily: props.family }}>
+        <span className="dth-font-card-line">{props.preview}</span>
+        <code className="dth-font-card-code">{props.codePreview}</code>
+      </span>
     </button>
   );
 }

@@ -1,8 +1,7 @@
-/* Static styles for the desktop-themes settings panel. Colors come from the
- * product's `--dsw-alias-*` tokens so the panel follows the active theme;
- * dynamic appearance (fonts, transparency, wallpaper, glass) is injected at
- * runtime. No color is hard-coded in these rules beyond transparent/black
- * alpha used for the glass fallback (handled in glass.ts). */
+/* Static styles for the desktop-themes settings panel and the effect layers.
+ * Colors come from the product's `--dsw-alias-*` tokens so the panel follows
+ * the active theme; dynamic appearance (fonts, wallpaper, glass, layout) is
+ * injected at runtime. */
 
 .dth-panel {
   display: grid;
@@ -10,7 +9,7 @@
   gap: 0;
   min-height: 420px;
   border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
+  border-radius: var(--dth-radius, 12px);
   overflow: hidden;
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-bg-base);
@@ -84,6 +83,11 @@
   font-size: 15px;
   font-weight: 500;
   color: var(--dsw-alias-label-primary);
+}
+
+.dth-section-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .dth-section-body {
@@ -182,6 +186,34 @@
   min-width: 20px;
 }
 
+/* Segmented control */
+.dth-segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.dth-seg {
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dth-seg:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.dth-seg.is-active {
+  background: var(--dsw-alias-button-primary-fill);
+  color: var(--dsw-alias-label-primary-foreground);
+  border-color: transparent;
+}
+
 .dth-btn {
   padding: 8px 14px;
   font: inherit;
@@ -224,19 +256,21 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
 }
 
+/* Theme cards */
 .dth-theme-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
   gap: 12px;
 }
 
 .dth-theme-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px;
+  gap: 8px;
+  padding: 0;
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 12px;
   background: var(--dsw-alias-bg-layer-1);
@@ -244,10 +278,11 @@
   font: inherit;
   cursor: pointer;
   text-align: left;
+  overflow: hidden;
 }
 
 .dth-theme-card:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-brand-primary);
 }
 
 .dth-theme-card.is-selected {
@@ -255,28 +290,193 @@
   box-shadow: 0 0 0 1px var(--dsw-alias-brand-primary) inset;
 }
 
-.dth-theme-card-swatches {
-  display: flex;
-  gap: 4px;
+.dth-theme-card-preview {
+  position: relative;
+  height: 76px;
+  display: block;
 }
 
-.dth-theme-card-swatches span {
-  width: 20px;
-  height: 20px;
+.dth-theme-card-panel {
+  position: absolute;
+  inset: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
+  padding: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.dth-theme-card-text {
+  width: 60%;
+  height: 5px;
+  border-radius: 3px;
+  display: block;
+  opacity: 0.85;
+}
+
+.dth-theme-card-accent {
+  width: 26px;
+  height: 8px;
+  border-radius: 4px;
+  display: block;
+}
+
+.dth-theme-card-particles {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 10px;
+  justify-content: flex-end;
+}
+
+.dth-theme-card-particles i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0.9;
+}
+
+.dth-theme-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 12px;
 }
 
 .dth-theme-card-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+}
+
+.dth-theme-card-tag {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .dth-theme-card-desc {
   font-size: 12px;
   color: var(--dsw-alias-label-tertiary);
+  padding: 0 12px 12px;
 }
 
+/* Font cards */
+.dth-font-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.dth-font-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dth-font-card:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.dth-font-card.is-selected {
+  border-color: var(--dsw-alias-brand-primary);
+  box-shadow: 0 0 0 1px var(--dsw-alias-brand-primary) inset;
+}
+
+.dth-font-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dth-font-card-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dth-font-badge {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--dsw-alias-state-warn-tertiary);
+  color: var(--dsw-alias-state-warn-primary);
+  white-space: nowrap;
+}
+
+.dth-font-badge.is-installed {
+  background: var(--dsw-alias-state-success-tertiary);
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.dth-font-card-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.dth-font-card-line {
+  overflow-wrap: anywhere;
+}
+
+.dth-font-card-code {
+  font-size: 12px;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+/* Color picker */
+.dth-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dth-color-swatch {
+  width: 40px;
+  height: 34px;
+  padding: 2px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  cursor: pointer;
+}
+
+.dth-color-text {
+  max-width: 140px;
+}
+
+.dth-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dth-swatches-chip {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Swatch legend */
 .dth-swatch-grid {
   display: flex;
   flex-wrap: wrap;
@@ -322,6 +522,27 @@
   color: var(--dsw-alias-state-error-primary);
 }
 
+/* Wallpaper */
+.dth-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 22px;
+  border: 1px dashed var(--dsw-alias-border-l3);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
+.dth-dropzone.is-drag {
+  border-color: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-interactive-bg-hover-accent);
+}
+
 .dth-wallpaper-preview {
   width: 100%;
   height: 140px;
@@ -337,7 +558,104 @@
   object-fit: cover;
 }
 
-/* Keyboard accessibility: a visible, consistent focus ring. */
+.dth-recent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dth-recent-item {
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dth-recent-item:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+/* Custom themes */
+.dth-custom-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dth-custom-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.dth-custom-item-name {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  text-align: left;
+}
+
+.dth-custom-item-name.is-active {
+  color: var(--dsw-alias-brand-primary);
+}
+
+.dth-custom-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.dth-harmony {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Effect layers (engine-owned) */
+.dth-effects-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.dth-effects-glow {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+
+/* Glass surfaces */
+.dth-glass {
+  background: rgba(17, 17, 19, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Keyboard accessibility */
 .dth-panel :focus-visible {
   outline: 2px solid var(--dsw-alias-brand-primary);
   outline-offset: 2px;
@@ -357,11 +675,13 @@
 .dth-panel[data-dth-animations='false'] .dth-btn,
 .dth-panel[data-dth-animations='false'] .dth-nav-item,
 .dth-panel[data-dth-animations='false'] .dth-theme-card,
-.dth-panel[data-dth-animations='false'] .dth-toggle {
+.dth-panel[data-dth-animations='false'] .dth-font-card,
+.dth-panel[data-dth-animations='false'] .dth-toggle,
+.dth-panel[data-dth-animations='false'] .dth-seg {
   transition: none !important;
 }
 
-/* Zoom tolerance: allow the panel to reflow instead of overflowing. */
+/* Responsive */
 @media (max-width: 640px) {
   .dth-panel {
     grid-template-columns: 1fr;
@@ -377,7 +697,7 @@
 }
 
 /* Live effect preview: a colorful backdrop so transparency / glass are
- * actually visible (a flat background gives the eye nothing to compare). */
+ * actually visible. */
 .dth-preview {
   position: relative;
   box-sizing: border-box;
@@ -406,7 +726,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* background / backdrop-filter / border / shadow are set inline from config */
 }
 
 .dth-preview-text {
@@ -419,11 +738,4 @@
   font-size: 12px;
   opacity: 0.85;
   font-variant-numeric: tabular-nums;
-}
-
-.dth-preview-hint {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--dsw-alias-label-tertiary);
-  overflow-wrap: anywhere;
 }

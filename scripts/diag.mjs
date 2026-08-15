@@ -26,23 +26,32 @@ const document = {
       dataset: {},
       textContent: '',
       isConnected: false,
-      style: {},
+      style: { setProperty() {} },
+      className: '',
+      width: 0,
+      height: 0,
       getAttribute() { return null; },
       setAttribute() {},
       removeAttribute() {},
       remove() { this.isConnected = false; },
       append() {},
+      appendChild() {},
       isConnectedFlag: false,
       querySelector() { return null; },
+      getContext() { return null; },
     };
   },
   querySelector() { return null; },
   querySelectorAll() { return []; },
+  addEventListener() {},
+  removeEventListener() {},
+  hidden: false,
   body: {
     style: { setProperty() {}, removeProperty() {} },
     setAttribute() {},
     removeAttribute() {},
     getAttribute() { return null; },
+    appendChild() {},
   },
   documentElement: { style: {} },
 };
@@ -68,6 +77,12 @@ globalThis.window = {
       capturedFactory = spec;
     },
   },
+  addEventListener() {},
+  removeEventListener() {},
+  innerWidth: 1280,
+  innerHeight: 720,
+  devicePixelRatio: 1,
+  matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }),
 };
 
 const fakeRequire = (id) => {
