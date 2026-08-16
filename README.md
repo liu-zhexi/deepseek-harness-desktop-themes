@@ -14,14 +14,15 @@
 
 1. [功能](#功能)
 2. [快速开始（构建）](#快速开始构建)
-3. [安装](#安装)
-4. [卸载与恢复](#卸载与恢复)
-5. [配置与持久化](#配置与持久化)
-6. [字体安装与回退](#字体安装与回退)
-7. [性能模式](#性能模式)
-8. [测试与构建验证](#测试与构建验证)
-9. [已知限制](#已知限制)
-10. [项目结构](#项目结构)
+3. [让 AI 一键安装](#让-ai-一键安装)
+4. [手动安装](#手动安装)
+5. [卸载与恢复](#卸载与恢复)
+6. [配置与持久化](#配置与持久化)
+7. [字体安装与回退](#字体安装与回退)
+8. [性能模式](#性能模式)
+9. [测试与构建验证](#测试与构建验证)
+10. [已知限制](#已知限制)
+11. [项目结构](#项目结构)
 
 ---
 
@@ -70,7 +71,34 @@ npm pack            # 产出 dsh-desktop-themes-1.4.0.tgz
 
 ---
 
-## 安装
+## 让 AI 一键安装
+
+把下面整段提示词复制给能操作终端和本地文件的 AI（例如 Codex）。AI 会自动识别系统、安装或更新插件、配置字体，并在最后验证结果：
+
+```text
+请直接在我的电脑上安装或更新 DeepSeek Harness Desktop Themes，不要只告诉我操作步骤；请持续执行到验证成功。
+
+仓库：https://github.com/liu-zhexi/deepseek-harness-desktop-themes
+
+要求：
+1. 识别 Windows、macOS 或 Linux，以及现有 Git、Node.js、npm、pnpm、dsh 环境。Node.js 要求 >= 20；缺少必要工具时，只从官方来源或 npm 安装稳定版本。需要管理员权限时向我请求授权。
+2. 将仓库克隆到合适的本地目录；如果已经存在，就安全更新到 origin/main。保留任何未提交的本地修改，不得强制覆盖或删除用户文件。
+3. 安装依赖并依次执行 npm run typecheck、npm test、npm run build；遇到错误要定位并解决，不要跳过验证。
+4. 推荐并安装两款字体：界面字体 LXGW WenKai（霞鹜文楷）和代码字体 Maple Mono。只能从各自官方 GitHub Release 下载字体文件，不要使用第三方镜像或不明安装器：
+   - https://github.com/lxgw/LxgwWenKai/releases/latest
+   - https://github.com/subframe7536/maple-font/releases/latest
+   优先使用静态 TTF，安装到当前用户字体目录；安装后确认系统可以识别 “LXGW WenKai” 和 “Maple Mono”。
+5. 确认 DeepSeek Harness 的 web profile 已初始化。在 cordis.patch.yml 中以幂等方式注册 dsh-desktop-themes：已有配置不要重复添加，修改前创建备份，不要破坏其他插件配置。
+6. 在仓库目录运行 npm run deploy:web 安装最新构建。若当前系统不能由脚本自动重启，则安全重启 dsh web。
+7. 验证 dsh plugin --profile web list 能看到插件、http://127.0.0.1:3080 可访问，并确认“设置 → 桌面外观”出现。然后将界面字体设为 LXGW WenKai、代码字体设为 Maple Mono；如果不能自动操作界面，明确告诉我最后两次点击的位置。
+8. 最后汇报仓库路径、插件版本、构建/测试结果、字体安装状态、备份文件位置和访问地址。不得输出或上传本机密钥、照片及其他隐私文件。
+```
+
+> 推荐组合：**LXGW WenKai 用于界面与中文正文，Maple Mono 用于代码**。插件不内置字体文件，字体需要单独安装。
+
+---
+
+## 手动安装
 
 插件由 **宿主侧（设置持久化）+ 客户端侧（主题/外观/设置页）** 组成，安装分两步：
 
@@ -151,6 +179,11 @@ dsh web
 ---
 
 ## 字体安装与回退
+
+推荐安装：
+
+- **[LXGW WenKai（霞鹜文楷）](https://github.com/lxgw/LxgwWenKai/releases/latest)**：推荐作为界面与中文正文字体。
+- **[Maple Mono](https://github.com/subframe7536/maple-font/releases/latest)**：推荐作为代码字体，兼顾清晰度与连字效果。
 
 界面字体预设：系统默认、霞鹜文楷 LXGW WenKai、Maple UI、MiSans、HarmonyOS Sans SC、Noto Sans SC、Microsoft YaHei UI、PingFang SC。
 
