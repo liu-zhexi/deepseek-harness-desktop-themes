@@ -1,15 +1,15 @@
 # 配置说明
 
-普通设置持久化在宿主设置文档（默认 `$DSH_HOME/settings.yaml`）的 `ui-desktop-themes` 命名空间，由 schemastery schema 在宿主侧校验；客户端通过 settings scope 读写。壁纸字节单独存放在 IndexedDB 数据库 `dsh-desktop-themes`（存 Blob，配置里只存受管理的 `sourceId`）。
+普通设置持久化在宿主设置文档（默认 `$DSH_HOME/settings.yaml`）的 `ui-desktop-themes` 命名空间，由 schemastery schema 在宿主侧校验；客户端通过 settings scope 读写。设置页顶部“保存全部设置”还会同步写入不含图片字节的浏览器本地备份，供刷新/重启优先恢复。自定义壁纸字节单独存放在 IndexedDB 数据库 `dsh-desktop-themes`（存 Blob，配置里只存受管理的 `sourceId`）；六张内置主题壁纸随插件发布。
 
-配置带有 `schemaVersion`（当前 `2`），读取时执行版本迁移。
+配置带有 `schemaVersion`（当前 `3`），读取时执行版本迁移。
 
 ## 顶层结构
 
 ```jsonc
 {
-  "schemaVersion": 2,
-  "theme": "quantum-blue",
+  "schemaVersion": 3,
+  "theme": "obsidian-gold",
   "font": { /* … */ },
   "appearance": { /* … */ },
   "wallpaper": { /* … */ },
@@ -26,7 +26,7 @@
 
 - 类型：string（内置 id 或 `custom-*` 自定义 id）
 - 内置：`quantum-blue` / `aurora-dream` / `mint-breeze` / `sakura-mist` / `sunset-flow` / `obsidian-gold`
-- 默认：`quantum-blue`
+- 默认：`obsidian-gold`（黑金星穹）
 
 ### `font`
 
@@ -48,11 +48,11 @@
 | 字段 | 类型 | 默认 | 范围 |
 |---|---|---|---|
 | `transparencyEnabled` | boolean | true | |
-| `windowOpacity` | number | 0.92 | 0.55–1 |
-| `sidebarOpacity` | number | 0.78 | 0.55–1 |
-| `panelOpacity` | number | 0.84 | 0.55–1 |
-| `inputOpacity` | number | 0.86 | 0.55–1 |
-| `borderRadius` | enum | `standard` | `compact/standard/soft` |
+| `windowOpacity` | number | 0.9 | 0.55–1 |
+| `sidebarOpacity` | number | 0.82 | 0.55–1 |
+| `panelOpacity` | number | 0.88 | 0.55–1 |
+| `inputOpacity` | number | 0.9 | 0.55–1 |
+| `borderRadius` | enum | `soft` | `compact/standard/soft` |
 | `contentWidth` | enum | `standard` | `compact/standard/wide` |
 | `animationsEnabled` | boolean | true | |
 
@@ -62,49 +62,49 @@
 
 | 字段 | 类型 | 默认 | 说明 |
 |---|---|---|---|
-| `enabled` | boolean | false | |
-| `sourceId` | string | `""` | IndexedDB 受管理资源 id（持久） |
-| `path` | string | `""` | 运行时 blob URL（**不持久化**，每次从 IndexedDB 重建） |
-| `name` | string | `""` | 原文件名 |
+| `enabled` | boolean | true | |
+| `sourceId` | string | `builtin:obsidian-gold` | 内置 id 或 IndexedDB 受管理资源 id（持久） |
+| `path` | string | `""` | 运行时 data/blob URL（**不持久化**，每次重建） |
+| `name` | string | `Obsidian Gold · Built-in` | 内置名称或原文件名 |
 | `fit` | enum | `cover` | `cover/contain/stretch/center/tile` |
 | `positionX/Y` | number | 50 | 0–100 |
 | `scale` | number | 1 | 0.5–3 |
-| `opacity` | number | 0.7 | 0–1 |
+| `opacity` | number | 0.72 | 0–1 |
 | `blur` | number | 0 | 0–50 |
-| `overlay` | number | 0.35 | 0–1 |
-| `saturation` | number | 1 | 0–2 |
-| `brightness` | number | 1 | 0.5–1.5 |
-| `tintEnabled` | boolean | false | 与主题强调色混合 |
-| `tintStrength` | number | 0.35 | 0–1 |
+| `overlay` | number | 0.42 | 0–1 |
+| `saturation` | number | 0.9 | 0–2 |
+| `brightness` | number | 0.9 | 0.5–1.5 |
+| `tintEnabled` | boolean | true | 与主题强调色混合 |
+| `tintStrength` | number | 0.14 | 0–1 |
 
 ### `glass`
 
 | 字段 | 类型 | 默认 | 说明 |
 |---|---|---|---|
 | `enabled` | boolean | true | |
-| `blurLevel` | enum | `standard` | `off/light/standard/strong`（0/8/16/24px） |
+| `blurLevel` | enum | `light` | `off/light/standard/strong`（0/8/16/24px） |
 | `strength` | number | 0 | 高级自定义模糊半径；0 = 跟随预设 |
-| `saturation` | number | 1.1 | 0.5–2 |
-| `panelOpacity` | number | 0.84 | 0–1 |
-| `borderHighlight` | number | 0.5 | 0–1 |
-| `shadow` | number | 0.3 | 0–1 |
+| `saturation` | number | 1.05 | 0.5–2 |
+| `panelOpacity` | number | 0.88 | 0–1 |
+| `borderHighlight` | number | 0.36 | 0–1 |
+| `shadow` | number | 0.42 | 0–1 |
 
 ### `effects`
 
 | 字段 | 类型 | 默认 | 说明 |
 |---|---|---|---|
 | `enabled` | boolean | true | 总开关 |
-| `preset` | enum | `starfield` | `none/tech-data/starfield/aurora-flow/fireflies/bubbles/sakura/gold-dust/breathing/custom` |
+| `preset` | enum | `gold-dust` | `none/tech-data/starfield/aurora-flow/fireflies/bubbles/sakura/gold-dust/breathing/custom` |
 | `density` | enum | `medium` | `off/low/medium/high` |
 | `particleCount` | number | 0 | 显式数量；0 = 自动（按面积+档位） |
-| `particleSize` | number | 2 | 1–6 |
-| `particleSpeed` | number | 1 | 0.2–3 |
-| `particleOpacity` | number | 0.5 | 0–1 |
+| `particleSize` | number | 2.5 | 1–6 |
+| `particleSpeed` | number | 0.7 | 0.2–3 |
+| `particleOpacity` | number | 0.82 | 0–1 |
 | `connectLines` | boolean | false | 连线 |
 | `mouseInteraction` | boolean | false | 鼠标互动 |
 | `parallax` | boolean | false | 背景视差 |
 | `cursorGlow` | boolean | false | 光标跟随柔光 |
-| `glowIntensity` | enum | `soft` | `off/soft/standard/bright` |
+| `glowIntensity` | enum | `standard` | `off/soft/standard/bright` |
 | `animationSpeed` | enum | `gentle` | `still/gentle/standard/active` |
 | `autoThemeColors` | boolean | true | 自动适配主题颜色 |
 | `particleColors` | string[] | `[]` | 关闭自动配色时的粒子颜色 |
@@ -141,19 +141,20 @@
 | 字段 | 类型 | 默认 | 说明 |
 |---|---|---|---|
 | `enabled` | boolean | true | 显示开关 |
-| `style` | enum | `photo` | `photo/ruan/ghost/slime/cat`（小程序员/阮启岚/幽灵/史莱姆/小猫） |
-| `positionX` | number | 88 | 水平锚点，视口百分比 0–100 |
-| `positionY` | number | 84 | 垂直锚点，视口百分比 0–100 |
-| `size` | number | 112 | 角色尺寸 px，64–288 |
+| `style` | enum | `moonfox` | `moonfox/photo/ruan/ghost/slime/cat`（月灵狐/小程序员/阮启岚/幽灵/史莱姆/小猫） |
+| `positionX` | number | 89 | 水平锚点，视口百分比 0–100 |
+| `positionY` | number | 82 | 垂直锚点，视口百分比 0–100 |
+| `size` | number | 144 | 角色尺寸 px，64–288 |
 | `animations` | boolean | true | 待机动画（漂浮/眨眼/热气） |
 | `speech` | boolean | true | 悬停/打开菜单时显示气泡台词 |
 
 > 位置通过拖拽实时更新并持久化；`power-saver` 性能档位或系统 `prefers-reduced-motion` 下自动关闭动画。
-> `photo` 与 `ruan` 是透明底真人角色（内嵌资源，无运行时网络请求）；`ruan` 的说话、打篮球、铁山靠、挥手动作按动作延迟初始化，并会在靠近屏幕边缘时自动回推。`ghost/slime/cat` 为 SVG 绘制、随主题强调色着色。
+> `moonfox` 使用头部/身体/尾巴三层平滑轮廓，随机眨眼、左右观察、警觉抬头、呼吸与摆尾；`photo` 与 `ruan` 是内嵌角色资源。说话、打篮球、铁山靠、挥手和随机动作仅属于 `ruan`，按动作延迟初始化，并会在靠近屏幕边缘时自动回推。`ghost/slime/cat` 为 SVG 绘制、随主题强调色着色。
 
 ## 版本迁移
 
 - `1 → 2`：主题 id 映射（`tokyo-night→quantum-blue`、`catppuccin-mocha→aurora-dream`、`black-gold→obsidian-gold`）；旧字体名 → 预设；旧 `glass.performanceMode` → `blurLevel`（预设档位时 `strength` 归 0）；新增 effects/performance/customThemes/recentWallpapers。
+- `2 → 3`：旧版内置主题的低可见度粒子配方迁移到新的主题专属中密度配方；用户主动设置的高密度/高透明度参数保持不变。
 - 未来版本在 `src/config/validation.ts` 的 `MIGRATIONS` 表追加步骤。
 
 ## 导出 / 导入
@@ -164,9 +165,12 @@
 
 ## 重置
 
-- 恢复当前主题默认值 / 恢复分组默认值 / 恢复全部默认值（清除壁纸与所有外观设置）。
+- 恢复当前主题默认值 / 恢复分组默认值 / 恢复全部默认值（黑金星穹 + 内置壁纸 + 月灵狐）。
 
 ## 存储与安全
+
+- “保存全部设置”同时写宿主设置与 `localStorage` 小型配置备份；备份会清除运行时 `blob:`/`data:` 路径，不含壁纸图片字节。
+- 自定义壁纸 Blob 仍只进入 IndexedDB；内置壁纸由插件包提供。
 
 - 普通设置经 schemastery 校验写入；无效值被拒绝或回退默认。
 - 壁纸字节存 IndexedDB Blob，不在设置里存 Base64；替换/清除时删除插件生成的缓存，不删除用户原图。

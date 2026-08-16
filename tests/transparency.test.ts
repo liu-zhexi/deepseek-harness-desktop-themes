@@ -6,7 +6,7 @@ import { DEFAULT_APPEARANCE } from '../src/config/defaults.ts';
 
 test('surfaceColorsFor resolves registered themes to their palettes', () => {
   const colors = surfaceColorsFor('quantum-blue');
-  assert.equal(colors.base, '#0A0E1A');
+  assert.equal(colors.base, '#030817');
   assert.match(colors.sidebar, /^#/);
   assert.match(surfaceColorsFor('dark').base, /^#/);
   assert.equal(surfaceColorsFor('light').base, '#ffffff');
@@ -21,7 +21,7 @@ test('buildTransparencyOverrides emits rgba() values with the right alpha', () =
   const overrides = buildTransparencyOverrides(DEFAULT_APPEARANCE, 'quantum-blue', false);
   const base = overrides['--dsw-alias-bg-base'];
   assert.ok(base, 'bg-base override present');
-  assert.match(base.dark, /rgba\(10, 14, 26, 0\.92\)/);
+  assert.match(base.dark, /rgba\(3, 8, 23, 0\.9\)/);
   assert.equal(base.light, base.dark);
 });
 

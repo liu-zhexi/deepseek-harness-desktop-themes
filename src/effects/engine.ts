@@ -13,7 +13,7 @@
  *    the `#root` app shell keep every layer behind content.
  */
 
-import type { EffectsConfig, PerformanceLevel } from '../config/types.ts';
+import type { EffectPresetId, EffectsConfig, PerformanceLevel } from '../config/types.ts';
 import { hexToRgb } from '../utils/color.ts';
 import { getEffectPreset, type EffectKind } from './presets.ts';
 
@@ -44,15 +44,21 @@ interface Particle {
 }
 
 const PERF_CAPS: Record<PerformanceLevel, { min: number; max: number }> = {
-  'power-saver': { min: 20, max: 35 },
-  balanced: { min: 40, max: 70 },
-  quality: { min: 80, max: 120 },
+  'power-saver': { min: 14, max: 24 },
+  balanced: { min: 36, max: 64 },
+  quality: { min: 72, max: 112 },
 };
 
 const PERF_DPR: Record<PerformanceLevel, number> = {
   'power-saver': 1,
-  balanced: 1.5,
-  quality: 2,
+  balanced: 1.25,
+  quality: 1.75,
+};
+
+const PERF_FRAME_INTERVAL: Record<PerformanceLevel, number> = {
+  'power-saver': 1000 / 20,
+  balanced: 1000 / 30,
+  quality: 1000 / 60,
 };
 
 const SPEED_FACTOR: Record<EffectsConfig['animationSpeed'], number> = {
@@ -88,7 +94,7 @@ export function resolveParticleCount(config: EffectsConfig, level: PerformanceLe
   if (config.density === 'off') return 0;
   const cap = PERF_CAPS[level];
   if (config.particleCount > 0) return Math.min(config.particleCount, cap.max);
-  const areaBased = Math.round(area / 22000);
+  const areaBased = Math.round(area / 18000);
   const base = Math.min(cap.max, Math.max(cap.min, areaBased));
   return Math.round(Math.min(cap.max, Math.max(cap.min, base * DENSITY_FACTOR[config.density])));
 }
@@ -110,6 +116,7 @@ export class EffectsEngine {
   private dpr = 1;
   private reducedMotion = false;
   private presetKind: EffectKind = 'none';
+  private presetId: EffectPresetId = 'none';
   private connectLines = false;
   private glowEnabled = false;
   private glowColors: string[] = [];
@@ -118,6 +125,10 @@ export class EffectsEngine {
   private cursorGlowEnabled = false;
   private cursorEl: HTMLDivElement | null = null;
   private cursorRaf = 0;
+  private frameIntervalMs = PERF_FRAME_INTERVAL.balanced;
+  private lastFrameTime = 0;
+  private pointerTrackingEnabled = false;
+  private mouseInteractionEnabled = false;
   private pointer = { x: -1, y: -1, active: false };
   private resizeTimer: ReturnType<typeof setTimeout> | null = null;
   private cleanup: Array<() => void> = [];
@@ -135,6 +146,7 @@ export class EffectsEngine {
       };
       window.addEventListener('resize', onResize);
       const onPointer = (e: PointerEvent) => {
+        if (!this.pointerTrackingEnabled) return;
         this.pointer.x = e.clientX;
         this.pointer.y = e.clientY;
         this.pointer.active = true;
@@ -163,6 +175,7 @@ export class EffectsEngine {
     const { effects, performance, colors, reducedMotion } = input;
     this.reducedMotion = reducedMotion;
     const meta = getEffectPreset(effects.preset);
+    this.presetId = effects.preset;
     this.presetKind = meta.kind;
     const glowAlpha = GLOW_ALPHA[effects.glowIntensity];
     // Ambient glow is driven by the light-intensity setting, independent of the
@@ -174,7 +187,10 @@ export class EffectsEngine {
     this.glowAlphaBase = glowAlpha;
     this.animationSpeed = effects.animationSpeed;
     this.cursorGlowEnabled = effects.cursorGlow;
-    this.connectLines = effects.connectLines && hasParticles;
+    this.mouseInteractionEnabled = effects.mouseInteraction;
+    this.pointerTrackingEnabled = this.cursorGlowEnabled || this.mouseInteractionEnabled;
+    this.frameIntervalMs = PERF_FRAME_INTERVAL[performance];
+    this.connectLines = false;
 
     if (!hasParticles && !hasGlow) {
       this.stopLoop();
@@ -184,13 +200,21 @@ export class EffectsEngine {
 
     this.ensureLayers();
     this.resize(performance);
+    if (this.canvas !== null) {
+      this.canvas.dataset.preset = effects.preset;
+      this.canvas.dataset.density = effects.density;
+      this.canvas.dataset.dpr = this.dpr.toFixed(2);
+      this.canvas.dataset.fps = String(Math.round(1000 / this.frameIntervalMs));
+    }
 
     if (hasParticles) {
       const target = resolveParticleCount(effects, performance, this.width * this.height);
       this.seedParticles(target, effects, colors);
+      this.connectLines = effects.connectLines && target <= 64;
     } else {
       this.particles = [];
     }
+    if (this.canvas !== null) this.canvas.dataset.particles = String(this.particles.length);
 
     this.applyGlow();
 
@@ -338,14 +362,19 @@ export class EffectsEngine {
     if (this.running || this.disposed) return;
     if (this.reducedMotion) {
       // Render a single static frame and stop — no continuous animation.
-      this.draw(true);
+      this.draw(true, 0);
       return;
     }
     if (typeof document !== 'undefined' && document.hidden) return;
     this.running = true;
-    const tick = () => {
+    const tick = (now: number) => {
       if (!this.running || this.disposed) return;
-      this.draw(false);
+      if (this.lastFrameTime === 0) this.lastFrameTime = now;
+      const elapsed = now - this.lastFrameTime;
+      if (elapsed >= this.frameIntervalMs) {
+        this.lastFrameTime = now - (elapsed % this.frameIntervalMs);
+        this.draw(false, Math.min(0.05, elapsed / 1000));
+      }
       this.raf = requestAnimationFrame(tick);
     };
     this.raf = requestAnimationFrame(tick);
@@ -353,20 +382,21 @@ export class EffectsEngine {
 
   private stopLoop(): void {
     this.running = false;
+    this.lastFrameTime = 0;
     if (this.raf !== 0) {
       cancelAnimationFrame(this.raf);
       this.raf = 0;
     }
   }
 
-  private draw(staticFrame: boolean): void {
+  private draw(staticFrame: boolean, dt: number): void {
     if (this.ctx === null || this.canvas === null) return;
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
 
-    const mouseActive = this.pointer.active;
+    const mouseActive = this.mouseInteractionEnabled && this.pointer.active;
     for (const p of this.particles) {
-      if (!staticFrame) this.step(p, 0.016, mouseActive);
+      if (!staticFrame) this.step(p, dt, mouseActive);
       this.paint(ctx, p);
     }
 
@@ -418,37 +448,104 @@ export class EffectsEngine {
       ? p.twinkle * (0.6 + 0.4 * Math.sin(p.phase))
       : 1;
     const alpha = Math.min(1, Math.max(0, p.alpha * tw));
+    const solid = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`;
+    ctx.save();
     ctx.globalAlpha = alpha;
 
-    if (p.kind === 'petals') {
+    if (this.presetId === 'tech-data') {
+      ctx.translate(p.x, p.y);
+      ctx.rotate(Math.atan2(p.vy, p.vx));
+      ctx.strokeStyle = solid;
+      ctx.fillStyle = solid;
+      ctx.shadowColor = solid;
+      ctx.shadowBlur = 7;
+      ctx.lineWidth = Math.max(0.9, p.size * 0.38);
+      ctx.beginPath();
+      ctx.moveTo(-p.size * 4.6, 0);
+      ctx.lineTo(p.size * 2.2, 0);
+      ctx.stroke();
+      ctx.fillRect(p.size * 2.4, -p.size * 0.55, p.size * 1.1, p.size * 1.1);
+    } else if (this.presetId === 'aurora-flow') {
+      ctx.translate(p.x, p.y);
+      ctx.rotate(Math.atan2(p.vy, p.vx));
+      ctx.strokeStyle = solid;
+      ctx.shadowColor = solid;
+      ctx.shadowBlur = 12;
+      ctx.lineCap = 'round';
+      ctx.lineWidth = Math.max(1.2, p.size * 0.7);
+      ctx.beginPath();
+      ctx.moveTo(-p.size * 3.5, 0);
+      ctx.quadraticCurveTo(0, Math.sin(p.drift) * p.size * 1.8, p.size * 3.5, 0);
+      ctx.stroke();
+    } else if (this.presetId === 'fireflies') {
+      ctx.fillStyle = solid;
+      ctx.shadowColor = solid;
+      ctx.shadowBlur = Math.max(8, p.size * 5);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, Math.max(1, p.size * 0.72), 0, Math.PI * 2);
+      ctx.fill();
+    } else if (this.presetId === 'gold-dust') {
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.drift);
+      ctx.fillStyle = solid;
+      ctx.strokeStyle = solid;
+      ctx.shadowColor = solid;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(0, -p.size * 1.35);
+      ctx.lineTo(p.size * 0.55, 0);
+      ctx.lineTo(0, p.size * 1.35);
+      ctx.lineTo(-p.size * 0.55, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha *= 0.68;
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(-p.size * 1.8, 0);
+      ctx.lineTo(p.size * 1.8, 0);
+      ctx.moveTo(0, -p.size * 2.1);
+      ctx.lineTo(0, p.size * 2.1);
+      ctx.stroke();
+    } else if (p.kind === 'petals') {
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.drift);
-      ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`;
+      ctx.fillStyle = solid;
+      ctx.shadowColor = solid;
+      ctx.shadowBlur = 4;
       ctx.beginPath();
       ctx.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     } else if (p.kind === 'bubbles') {
-      ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`;
-      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = solid;
+      ctx.fillStyle = solid;
+      ctx.shadowColor = solid;
+      ctx.shadowBlur = 5;
+      ctx.lineWidth = Math.max(1, p.size * 0.28);
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.globalAlpha *= 0.7;
+      ctx.beginPath();
+      ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.35, Math.max(0.6, p.size * 0.18), 0, Math.PI * 2);
+      ctx.fill();
     } else if (p.kind === 'streaks') {
-      ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`;
+      ctx.strokeStyle = solid;
       ctx.lineWidth = Math.max(0.6, p.size * 0.35);
       ctx.beginPath();
       ctx.moveTo(p.x, p.y);
       ctx.lineTo(p.x - p.vx * 6, p.y - p.vy * 6);
       ctx.stroke();
     } else {
-      ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`;
+      ctx.fillStyle = solid;
+      ctx.shadowColor = solid;
+      ctx.shadowBlur = this.presetId === 'starfield' ? 6 : 3;
       ctx.beginPath();
       ctx.arc(p.x, p.y, Math.max(0.5, p.size * 0.7), 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   private paintLines(ctx: CanvasRenderingContext2D): void {
@@ -463,7 +560,7 @@ export class EffectsEngine {
         if (d2 > max * max) continue;
         const d = Math.sqrt(d2) || 1;
         const rgb = hexToRgb(a.color);
-        ctx.globalAlpha = Math.min(0.25, (1 - d / max) * 0.22);
+        ctx.globalAlpha = Math.min(0.36, (1 - d / max) * 0.34);
         ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`;
         ctx.lineWidth = 0.5;
         ctx.beginPath();

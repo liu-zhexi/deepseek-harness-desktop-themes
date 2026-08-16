@@ -12,6 +12,7 @@ export interface ThemeCardModel {
   name: string;
   description: string;
   tag: string;
+  wallpaper?: string;
   colors: {
     bg: string;
     panel: string;
@@ -262,10 +263,10 @@ export function ColorSwatches(props: { colors: string[]; onPick: (v: string) => 
   );
 }
 
-export function Button(props: { onClick: () => void; children: ReactNode; variant?: 'primary' | 'ghost' | 'danger'; title?: string }) {
+export function Button(props: { onClick: () => void; children: ReactNode; variant?: 'primary' | 'ghost' | 'danger'; title?: string; disabled?: boolean }) {
   const variant = props.variant ?? 'ghost';
   return (
-    <button type="button" className={`dth-btn dth-btn-${variant}`} onClick={props.onClick} title={props.title}>
+    <button type="button" className={`dth-btn dth-btn-${variant}`} onClick={props.onClick} title={props.title} disabled={props.disabled}>
       {props.children}
     </button>
   );
@@ -280,7 +281,11 @@ export function ThemeCard(props: { theme: ThemeCardModel; selected: boolean; onS
       aria-pressed={props.selected}
       onClick={props.onSelect}
     >
-      <span className="dth-theme-card-preview" style={{ background: c.bg }} aria-hidden="true">
+      <span
+        className="dth-theme-card-preview"
+        style={{ backgroundColor: c.bg, backgroundImage: props.theme.wallpaper === undefined ? undefined : `linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)), url(${props.theme.wallpaper})` }}
+        aria-hidden="true"
+      >
         <span className="dth-theme-card-panel" style={{ background: c.panel, color: c.text }}>
           <span className="dth-theme-card-text" style={{ background: c.text }} />
           <span className="dth-theme-card-accent" style={{ background: c.accent }} />

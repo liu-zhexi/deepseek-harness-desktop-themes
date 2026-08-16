@@ -5,14 +5,15 @@ import { DEFAULT_CONFIG, createDefaultConfig } from '../src/config/defaults.ts';
 import { coerceConfig, mergeConfig } from '../src/config/validation.ts';
 
 test('default config has six themes and full sub-objects', () => {
-  assert.equal(DEFAULT_CONFIG.theme, 'quantum-blue');
-  assert.equal(DEFAULT_CONFIG.schemaVersion, 2);
+  assert.equal(DEFAULT_CONFIG.theme, 'obsidian-gold');
+  assert.equal(DEFAULT_CONFIG.schemaVersion, 3);
   assert.ok(DEFAULT_CONFIG.font.uiPreset.length > 0);
   assert.ok(DEFAULT_CONFIG.font.codePreset.length > 0);
-  assert.equal(DEFAULT_CONFIG.appearance.windowOpacity, 0.92);
-  assert.equal(DEFAULT_CONFIG.wallpaper.enabled, false);
+  assert.equal(DEFAULT_CONFIG.appearance.windowOpacity, 0.9);
+  assert.equal(DEFAULT_CONFIG.wallpaper.enabled, true);
+  assert.equal(DEFAULT_CONFIG.wallpaper.sourceId, 'builtin:obsidian-gold');
   assert.equal(DEFAULT_CONFIG.glass.enabled, true);
-  assert.equal(DEFAULT_CONFIG.effects.preset, 'starfield');
+  assert.equal(DEFAULT_CONFIG.effects.preset, 'gold-dust');
   assert.equal(DEFAULT_CONFIG.performance.level, 'balanced');
 });
 
@@ -41,7 +42,7 @@ test('coerceConfig clamps out-of-range numbers and drops unknown keys', () => {
     appearance: { windowOpacity: 0.01 },
     extra: 'ignored',
   });
-  assert.equal(config.theme, 'quantum-blue'); // invalid theme falls back
+  assert.equal(config.theme, 'obsidian-gold'); // invalid theme falls back
   assert.equal(config.font.fontSize, 24); // clamped to max
   assert.equal(config.font.lineHeight, 1); // clamped to min
   assert.equal(config.font.ligatures, true); // non-boolean falls back

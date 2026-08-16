@@ -42,6 +42,7 @@ import type {
   WallpaperFit,
 } from './types.ts';
 import { SCHEMA_VERSION } from './types.ts';
+import { THEME_VISUAL_DEFAULTS } from '../themes/visual-defaults.ts';
 
 const THEME_IDS: readonly string[] = [
   'quantum-blue',
@@ -59,8 +60,8 @@ const DENSITIES = ['off', 'low', 'medium', 'high'] as const;
 const LIGHT_INTENSITIES: readonly LightIntensity[] = ['off', 'soft', 'standard', 'bright'];
 const RADIUS_LEVELS: readonly BorderRadiusLevel[] = ['compact', 'standard', 'soft'];
 const WIDTH_LEVELS: readonly ContentWidthLevel[] = ['compact', 'standard', 'wide'];
-const PET_STYLES: readonly PetStyle[] = ['ghost', 'slime', 'cat', 'photo', 'ruan'];
-const VOICE_STYLES = ['normal', 'cheerful', 'playful', 'robot'] as const;
+const PET_STYLES: readonly PetStyle[] = ['moonfox', 'ghost', 'slime', 'cat', 'photo', 'ruan'];
+const VOICE_STYLES = ['normal', 'gentle', 'cheerful', 'playful', 'calm', 'robot'] as const;
 const EFFECT_PRESETS: readonly EffectPresetId[] = [
   'none',
   'tech-data',
@@ -448,6 +449,24 @@ const MIGRATIONS: Record<number, MigrationStep> = {
       next.glass = glass;
     }
 
+    next.schemaVersion = SCHEMA_VERSION;
+    return next;
+  },
+  // v2 → v3: make the old barely-visible built-in effect recipes adopt the
+  // stronger theme-specific defaults. Deliberately customized effects remain
+  // untouched.
+  2: (config) => {
+    const next = { ...config };
+    const theme: ThemeId = typeof next.theme === 'string' && THEME_IDS.includes(next.theme)
+      ? (next.theme as ThemeId)
+      : (DEFAULT_CONFIG.theme as ThemeId);
+    const effects = isObject(next.effects) ? { ...next.effects } : {};
+    const recipe = THEME_VISUAL_DEFAULTS[theme].effects;
+    const wasLegacyRecipe = effects.preset === recipe.preset
+      && effects.density === 'low'
+      && (typeof effects.particleSize !== 'number' || effects.particleSize <= 2)
+      && (typeof effects.particleOpacity !== 'number' || effects.particleOpacity <= 0.45);
+    if (wasLegacyRecipe) next.effects = { ...effects, ...recipe };
     next.schemaVersion = SCHEMA_VERSION;
     return next;
   },

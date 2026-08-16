@@ -7,23 +7,55 @@
  * do nothing, and the pet's animation still plays.
  */
 
-import type { VoiceStyle } from '../config/types.ts';
+import type { PetStyle, VoiceStyle } from '../config/types.ts';
 
-/** Emotion presets → pitch/rate. Higher pitch + slightly faster = playful. */
-export const VOICE_STYLE_PRESETS: Readonly<Record<VoiceStyle, { pitch: number; rate: number }>> = {
+export interface VoiceProfile {
+  pitch: number;
+  rate: number;
+}
+
+/** Six deliberately separated intonation bands. */
+export const VOICE_STYLE_PRESETS: Readonly<Record<VoiceStyle, VoiceProfile>> = {
   normal: { pitch: 1, rate: 1 },
-  cheerful: { pitch: 1.22, rate: 1.06 },
-  playful: { pitch: 1.5, rate: 1.12 },
-  robot: { pitch: 0.5, rate: 0.92 },
+  gentle: { pitch: 0.9, rate: 0.86 },
+  cheerful: { pitch: 1.24, rate: 1.1 },
+  playful: { pitch: 1.55, rate: 1.18 },
+  calm: { pitch: 0.72, rate: 0.78 },
+  robot: { pitch: 0.48, rate: 0.94 },
 };
 
-export const VOICE_STYLE_IDS: readonly VoiceStyle[] = ['normal', 'cheerful', 'playful', 'robot'];
+export const VOICE_STYLE_IDS: readonly VoiceStyle[] = ['normal', 'gentle', 'cheerful', 'playful', 'calm', 'robot'];
+
+/**
+ * Small character offsets keep pets recognisable even when they share the
+ * same selected intonation. Values are intentionally subtle enough to compose
+ * with the much stronger style preset above.
+ */
+const PET_VOICE_OFFSETS: Readonly<Record<PetStyle, VoiceProfile>> = {
+  moonfox: { pitch: 0.1, rate: 0.02 },
+  photo: { pitch: 0, rate: 0 },
+  ruan: { pitch: -0.08, rate: -0.04 },
+  ghost: { pitch: 0.16, rate: -0.06 },
+  slime: { pitch: 0.28, rate: 0.05 },
+  cat: { pitch: 0.2, rate: 0.08 },
+};
+
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
+export function resolveVoiceProfile(style: VoiceStyle, petStyle: PetStyle): VoiceProfile {
+  const preset = VOICE_STYLE_PRESETS[style] ?? VOICE_STYLE_PRESETS.normal;
+  const offset = PET_VOICE_OFFSETS[petStyle] ?? PET_VOICE_OFFSETS.photo;
+  return {
+    pitch: clamp(preset.pitch + offset.pitch, 0.1, 2),
+    rate: clamp(preset.rate + offset.rate, 0.5, 2),
+  };
+}
 
 /**
  * Speak a line with a chosen emotion preset. Cancels any in-flight utterance
  * first so rapid turn completions do not queue up an ever-growing backlog.
  */
-export function speakLine(text: string, style: VoiceStyle): void {
+export function speakLine(text: string, style: VoiceStyle, petStyle: PetStyle): void {
   if (typeof window === 'undefined') return;
   const synth = window.speechSynthesis;
   if (synth === undefined || synth === null) return;
@@ -33,23 +65,29 @@ export function speakLine(text: string, style: VoiceStyle): void {
   try {
     synth.cancel();
     const utter = new SpeechSynthesisUtterance(clean);
-    const preset = VOICE_STYLE_PRESETS[style] ?? VOICE_STYLE_PRESETS.normal;
-    utter.pitch = preset.pitch;
-    utter.rate = preset.rate;
+    const profile = resolveVoiceProfile(style, petStyle);
+    utter.pitch = profile.pitch;
+    utter.rate = profile.rate;
     utter.volume = 1;
 
     // Prefer a voice matching the document language so non-English lines
     // still read with a natural accent where the platform offers one.
     const lang = (document.documentElement.lang || navigator.language || 'en-US').toLowerCase();
     const voices = synth.getVoices();
-    const zh = voices.find((voice) => voice.lang.toLowerCase().replace('_', '-').startsWith('zh'));
-    const en = voices.find((voice) => voice.lang.toLowerCase().replace('_', '-').startsWith('en'));
+    const zh = voices.filter((voice) => voice.lang.toLowerCase().replace('_', '-').startsWith('zh'));
+    const en = voices.filter((voice) => voice.lang.toLowerCase().replace('_', '-').startsWith('en'));
+    const voiceIndex = VOICE_STYLE_IDS.indexOf(style);
+    const pickVoice = (matching: SpeechSynthesisVoice[]) => matching.length === 0
+      ? undefined
+      : matching[Math.max(0, voiceIndex) % matching.length];
     if (lang.startsWith('zh')) {
-      if (zh !== undefined) utter.voice = zh;
-      utter.lang = zh?.lang ?? 'zh-CN';
+      const voice = pickVoice(zh);
+      if (voice !== undefined) utter.voice = voice;
+      utter.lang = voice?.lang ?? 'zh-CN';
     } else {
-      if (en !== undefined) utter.voice = en;
-      utter.lang = en?.lang ?? 'en-US';
+      const voice = pickVoice(en);
+      if (voice !== undefined) utter.voice = voice;
+      utter.lang = voice?.lang ?? 'en-US';
     }
 
     synth.speak(utter);

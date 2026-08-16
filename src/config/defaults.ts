@@ -31,46 +31,46 @@ export const DEFAULT_FONT: FontConfig = {
 
 export const DEFAULT_APPEARANCE: AppearanceConfig = {
   transparencyEnabled: true,
-  windowOpacity: 0.92,
-  sidebarOpacity: 0.78,
-  panelOpacity: 0.84,
-  inputOpacity: 0.86,
-  borderRadius: 'standard',
+  windowOpacity: 0.9,
+  sidebarOpacity: 0.82,
+  panelOpacity: 0.88,
+  inputOpacity: 0.9,
+  borderRadius: 'soft',
   contentWidth: 'standard',
   animationsEnabled: true,
 };
 
 export const DEFAULT_WALLPAPER: WallpaperConfig = {
-  enabled: false,
-  sourceId: '',
+  enabled: true,
+  sourceId: 'builtin:obsidian-gold',
   path: '',
-  name: '',
+  name: 'Obsidian Gold · Built-in',
   fit: 'cover',
   positionX: 50,
   positionY: 50,
   scale: 1,
-  opacity: 0.7,
+  opacity: 0.72,
   blur: 0,
-  overlay: 0.35,
-  saturation: 1,
-  brightness: 1,
-  tintEnabled: false,
-  tintStrength: 0.35,
+  overlay: 0.42,
+  saturation: 0.9,
+  brightness: 0.9,
+  tintEnabled: true,
+  tintStrength: 0.14,
 };
 
 export const DEFAULT_EFFECTS: EffectsConfig = {
   enabled: true,
-  preset: 'starfield',
+  preset: 'gold-dust',
   density: 'medium',
   particleCount: 0,
-  particleSize: 2,
-  particleSpeed: 1,
-  particleOpacity: 0.5,
+  particleSize: 2.5,
+  particleSpeed: 0.7,
+  particleOpacity: 0.82,
   connectLines: false,
   mouseInteraction: false,
   parallax: false,
   cursorGlow: false,
-  glowIntensity: 'soft',
+  glowIntensity: 'standard',
   animationSpeed: 'gentle',
   autoThemeColors: true,
   particleColors: [],
@@ -83,12 +83,12 @@ export const DEFAULT_PERFORMANCE: PerformanceConfig = {
 
 export const DEFAULT_GLASS: GlassConfig = {
   enabled: true,
-  blurLevel: 'standard',
+  blurLevel: 'light',
   strength: 0,
-  saturation: 1.1,
-  panelOpacity: 0.84,
-  borderHighlight: 0.5,
-  shadow: 0.3,
+  saturation: 1.05,
+  panelOpacity: 0.88,
+  borderHighlight: 0.36,
+  shadow: 0.42,
 };
 
 /** Default speech-bubble lines (one phrase per entry). */
@@ -105,10 +105,10 @@ export const DEFAULT_PET_SPEECH_LINES: string[] = [
 
 export const DEFAULT_PET: PetConfig = {
   enabled: true,
-  style: 'photo',
-  positionX: 88,
-  positionY: 84,
-  size: 112,
+  style: 'moonfox',
+  positionX: 89,
+  positionY: 82,
+  size: 144,
   animations: true,
   speech: true,
   speechLines: [...DEFAULT_PET_SPEECH_LINES],
@@ -118,7 +118,7 @@ export const DEFAULT_PET: PetConfig = {
 
 export const DEFAULT_CONFIG: DesktopThemesConfig = {
   schemaVersion: SCHEMA_VERSION,
-  theme: 'quantum-blue',
+  theme: 'obsidian-gold',
   font: DEFAULT_FONT,
   appearance: DEFAULT_APPEARANCE,
   wallpaper: DEFAULT_WALLPAPER,
@@ -135,10 +135,10 @@ export const MIN_OPACITY = 0.55;
 
 /** Recommended (safe) values the "restore recommended" action reverts to. */
 export const RECOMMENDED_OPACITY = {
-  windowOpacity: 0.92,
-  sidebarOpacity: 0.78,
-  panelOpacity: 0.84,
-  inputOpacity: 0.86,
+  windowOpacity: 0.9,
+  sidebarOpacity: 0.82,
+  panelOpacity: 0.88,
+  inputOpacity: 0.9,
 } as const;
 
 /** A deep, frozen copy of the defaults (safe to hand to callers). */

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { THEMES, getTheme, isBuiltinTheme, bgBaseForTheme, resolvePalette, buildCustomThemeDefinition } from '../src/themes/index.ts';
 import { buildThemeTokens } from '../src/themes/palette.ts';
+import { THEME_VISUAL_DEFAULTS } from '../src/themes/visual-defaults.ts';
 
 test('the registry exposes exactly six themes with distinct ids', () => {
   assert.deepEqual(
@@ -54,10 +55,23 @@ test('getTheme / isBuiltinTheme / bgBaseForTheme behave for known and unknown id
 });
 
 test('resolvePalette resolves built-in and custom themes', () => {
-  assert.equal(resolvePalette('quantum-blue')?.bgBase, '#0A0E1A');
+  assert.equal(resolvePalette('quantum-blue')?.bgBase, '#030817');
   const custom = resolvePalette('custom-1', [{ id: 'custom-1', name: 'X', base: 'quantum-blue', colors: { primary: '#123456', accent: '#654321', background: '#0a0a0a', panel: '#111111', text: '#ffffff', particle: '#123456', glow: '#654321' } }]);
   assert.equal(custom?.bgBase, '#0a0a0a');
   assert.equal(resolvePalette('missing'), undefined);
+});
+
+test('every built-in theme has a distinct visible theme-specific visual recipe', () => {
+  assert.deepEqual(Object.keys(THEME_VISUAL_DEFAULTS).sort(), THEMES.map((theme) => theme.id).sort());
+  const presets = new Set(Object.values(THEME_VISUAL_DEFAULTS).map((preset) => preset.effects.preset));
+  assert.equal(presets.size, 6);
+  for (const preset of Object.values(THEME_VISUAL_DEFAULTS)) {
+    assert.equal(preset.effects.density, 'medium');
+    assert.ok((preset.effects.particleOpacity ?? 0) >= 0.5);
+    assert.ok((preset.effects.particleSize ?? 0) >= 2);
+    assert.ok((preset.wallpaper.opacity ?? 0) > 0);
+  }
+  assert.equal(THEME_VISUAL_DEFAULTS['quantum-blue'].effects.connectLines, true);
 });
 
 test('buildCustomThemeDefinition builds a register-able definition', () => {

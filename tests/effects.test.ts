@@ -10,8 +10,8 @@ test('particle counts stay within the performance-tier caps', () => {
   for (const level of ['power-saver', 'balanced', 'quality'] as const) {
     for (const density of ['low', 'medium', 'high'] as const) {
       const count = resolveParticleCount({ ...DEFAULT_EFFECTS, density }, level, area);
-      assert.ok(count >= 20, `${level}/${density} too low: ${count}`);
-      assert.ok(count <= 120, `${level}/${density} too high: ${count}`);
+      assert.ok(count >= 14, `${level}/${density} too low: ${count}`);
+      assert.ok(count <= 112, `${level}/${density} too high: ${count}`);
     }
   }
 });
@@ -21,7 +21,7 @@ test('off density yields zero particles', () => {
 });
 
 test('explicit count is clamped to the tier cap', () => {
-  assert.equal(resolveParticleCount({ ...DEFAULT_EFFECTS, particleCount: 400 }, 'balanced', 1920 * 1080), 70);
+  assert.equal(resolveParticleCount({ ...DEFAULT_EFFECTS, particleCount: 400 }, 'balanced', 1920 * 1080), 64);
   assert.equal(resolveParticleCount({ ...DEFAULT_EFFECTS, particleCount: 90 }, 'quality', 1920 * 1080), 90);
 });
 

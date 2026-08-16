@@ -38,7 +38,7 @@ const DEFINITIONS: DesktopTheme[] = [
   {
     id: 'quantum-blue',
     name: 'Quantum Blue',
-    description: 'Electric blue, cyan and violet over a deep blue-black canvas.',
+    description: 'Quantum circuits, cobalt depth and precise cyan telemetry.',
     tag: 'Tech',
     palette: quantumBlue,
     definition: { id: 'quantum-blue', colorScheme: 'dark', tokens: buildThemeTokens(quantumBlue) },
@@ -46,7 +46,7 @@ const DEFINITIONS: DesktopTheme[] = [
   {
     id: 'aurora-dream',
     name: 'Aurora Dream',
-    description: 'Slow-drifting indigo auroras with teal and pink glow.',
+    description: 'Indigo night, weightless teal auroras and muted rose light.',
     tag: 'Ethereal',
     palette: auroraDream,
     definition: { id: 'aurora-dream', colorScheme: 'dark', tokens: buildThemeTokens(auroraDream) },
@@ -54,7 +54,7 @@ const DEFINITIONS: DesktopTheme[] = [
   {
     id: 'mint-breeze',
     name: 'Mint Breeze',
-    description: 'Fresh mint, teal and soft cyan on a calm light surface.',
+    description: 'Airy celadon glass, translucent leaves and quiet daylight.',
     tag: 'Fresh',
     palette: mintBreeze,
     definition: { id: 'mint-breeze', colorScheme: 'light', tokens: buildThemeTokens(mintBreeze) },
@@ -62,7 +62,7 @@ const DEFINITIONS: DesktopTheme[] = [
   {
     id: 'sakura-mist',
     name: 'Sakura Mist',
-    description: 'Restrained misty pink, lavender and warm white.',
+    description: 'Washi warmth, distant mist and a restrained spring blush.',
     tag: 'Soft',
     palette: sakuraMist,
     definition: { id: 'sakura-mist', colorScheme: 'light', tokens: buildThemeTokens(sakuraMist) },
@@ -70,7 +70,7 @@ const DEFINITIONS: DesktopTheme[] = [
   {
     id: 'sunset-flow',
     name: 'Sunset Flow',
-    description: 'Deep purple and coral with slow golden halos.',
+    description: 'Aubergine dusk, flowing coral contours and amber horizons.',
     tag: 'Warm',
     palette: sunsetFlow,
     definition: { id: 'sunset-flow', colorScheme: 'dark', tokens: buildThemeTokens(sunsetFlow) },
@@ -78,7 +78,7 @@ const DEFINITIONS: DesktopTheme[] = [
   {
     id: 'obsidian-gold',
     name: 'Obsidian Gold',
-    description: 'Obsidian, charcoal and low-saturation gold.',
+    description: 'Polished obsidian, champagne-gold inlay and celestial depth.',
     tag: 'Premium',
     palette: obsidianGold,
     definition: { id: 'obsidian-gold', colorScheme: 'dark', tokens: buildThemeTokens(obsidianGold) },

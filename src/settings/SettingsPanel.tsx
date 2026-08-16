@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ChangeEvent, type DragEvent } from 'react';
-import type { DesktopThemesConfig, SettingsField, CustomThemeConfig, CustomThemeColors, PetStyle, VoiceStyle } from '../config/types.ts';
+import type { DesktopThemesConfig, SettingsField, CustomThemeConfig, CustomThemeColors, PetStyle, ThemeId, VoiceStyle } from '../config/types.ts';
 import { createDefaultConfig, DEFAULT_APPEARANCE, DEFAULT_FONT, DEFAULT_PET, RECOMMENDED_OPACITY } from '../config/defaults.ts';
 import { exportConfigJson, parseImportedConfig } from '../config/transfer.ts';
 import { THEMES, resolvePalette, type DesktopTheme } from '../themes/index.ts';
@@ -44,13 +44,15 @@ import { VOICE_STYLE_IDS } from '../pet/speech.ts';
 import { GlassPreview, GlowPreview, LiveFontPreview, ParticlesPreview, TransparencyPreview } from './EffectPreview.tsx';
 import { detectLang, makeTranslator, type I18nKey, type Lang, type Translate } from './i18n.ts';
 import { PLUGIN_BUILD_ID, PLUGIN_VERSION } from '../build-info.ts';
+import { applyBuiltinThemePreset, builtinWallpaperThumbnail } from '../client/theme-presets.ts';
 
 export type WallpaperPickResult = { ok: true } | { ok: false; reason: string };
 
 /** Business face injected by the client `apply` and merged into props. */
 export interface SettingsFace {
   store: Store<DesktopThemesConfig>;
-  saveNotifier: Store<{ saving: boolean; saved: boolean }>;
+  saveNotifier: Store<{ saving: boolean; saved: boolean; failed: boolean }>;
+  saveNow: () => Promise<boolean>;
   commit: (next: DesktopThemesConfig) => void;
   chooseWallpaper: (file: File) => Promise<WallpaperPickResult>;
   clearWallpaper: () => void;
@@ -88,6 +90,7 @@ const PRESET_OPTIONS = ['none', 'tech-data', 'starfield', 'aurora-flow', 'firefl
 const PRESET_SWATCHES = ['#3D7EFF', '#22D3EE', '#8B5CF6', '#14B8A6', '#FF7A59', '#C9A962', '#F472B6'];
 
 const STYLE_OPTIONS = [
+  { value: 'moonfox', key: 'pet.style.moonfox' },
   { value: 'photo', key: 'pet.style.photo' },
   { value: 'ruan', key: 'pet.style.ruan' },
   { value: 'ghost', key: 'pet.style.ghost' },
@@ -114,6 +117,7 @@ function builtinCardModel(t: Translate, theme: DesktopTheme): ThemeCardModel {
     name: t(themeNameKey(theme.id)),
     description: theme.description,
     tag: t(tagKey(theme.tag)),
+    wallpaper: builtinWallpaperThumbnail(theme.id as ThemeId),
     colors: { bg: p.bgBase, panel: p.bgSurface, text: p.textPrimary, accent: p.accent, particles: p.particleColors },
   };
 }
@@ -174,7 +178,13 @@ export function SettingsPanel(props: SettingsPanelProps) {
         </ul>
       </nav>
       <div className="dth-content" role="tabpanel" id={`dth-panel-${section}`} aria-labelledby={`dth-nav-${section}`}>
-        {saveState.saving ? <Notice tone="info">{t('common.saving')}</Notice> : saveState.saved ? <Notice tone="info">{t('common.saved')}</Notice> : null}
+        <div className="dth-savebar">
+          <span className="dth-savebar-hint">{t('common.saveHint')}</span>
+          <Button variant="primary" disabled={saveState.saving} onClick={() => void props.saveNow()}>
+            {saveState.saving ? t('common.saving') : t('common.saveAll')}
+          </Button>
+        </div>
+        {saveState.saved ? <Notice tone="info">{t('common.saved')}</Notice> : saveState.failed ? <Notice tone="error">{t('common.saveFailed')}</Notice> : null}
         {section === 'theme' ? <ThemeSection config={config} t={t} update={update} /> : null}
         {section === 'font' ? <FontSection config={config} t={t} update={update} /> : null}
         {section === 'wallpaper' ? (
@@ -216,7 +226,7 @@ function ThemeSection(props: { config: DesktopThemesConfig; t: Translate; update
               key={theme.id}
               theme={builtinCardModel(props.t, theme)}
               selected={props.config.theme === theme.id}
-              onSelect={() => props.update(patchTop(props.config, 'theme', theme.id))}
+              onSelect={() => props.update(applyBuiltinThemePreset(props.config, theme.id as ThemeId))}
             />
           ))}
           {props.config.customThemes.map((custom) => (
@@ -768,7 +778,7 @@ function TransferSection(props: { config: DesktopThemesConfig; t: Translate; upd
       <div className="dth-row-actions">
         <Button onClick={() => props.update(patchTop(props.config, 'font', { ...DEFAULT_FONT }))}>{props.t('reset.section')}</Button>
         <Button onClick={() => props.update(patchTop(props.config, 'appearance', { ...DEFAULT_APPEARANCE }))}>{props.t('reset.section')}</Button>
-        {activePalette !== undefined ? <Button onClick={() => props.update(patchTop(props.config, 'theme', 'quantum-blue'))}>{props.t('reset.theme')}</Button> : null}
+        {activePalette !== undefined ? <Button onClick={() => props.update(applyBuiltinThemePreset(props.config, 'obsidian-gold'))}>{props.t('reset.theme')}</Button> : null}
       </div>
       <Notice tone="info">{props.t('reset.all.desc')}</Notice>
       <div className="dth-row-actions">

@@ -6,13 +6,15 @@ import { coerceConfig, mergeConfig } from '../src/config/validation.ts';
 import { DesktopThemesSchema } from '../src/config/schema.ts';
 import { loadRuanAnim, RUAN_ANIM, RUAN_ANIM_ACTIONS } from '../src/pet/ruan-anim.ts';
 import { ruanActionShiftX, ruanActionVisualWidth } from '../src/pet/layout.ts';
+import { resolveVoiceProfile, VOICE_STYLE_IDS } from '../src/pet/speech.ts';
+import { readFileSync } from 'node:fs';
 
 test('default config has a full pet section', () => {
   assert.equal(DEFAULT_CONFIG.pet.enabled, true);
-  assert.equal(DEFAULT_CONFIG.pet.style, 'photo');
-  assert.equal(DEFAULT_CONFIG.pet.positionX, 88);
-  assert.equal(DEFAULT_CONFIG.pet.positionY, 84);
-  assert.equal(DEFAULT_CONFIG.pet.size, 112);
+  assert.equal(DEFAULT_CONFIG.pet.style, 'moonfox');
+  assert.equal(DEFAULT_CONFIG.pet.positionX, 89);
+  assert.equal(DEFAULT_CONFIG.pet.positionY, 82);
+  assert.equal(DEFAULT_CONFIG.pet.size, 144);
   assert.equal(DEFAULT_CONFIG.pet.animations, true);
   assert.equal(DEFAULT_CONFIG.pet.speech, true);
   assert.ok(DEFAULT_CONFIG.pet.speechLines.length > 0);
@@ -68,6 +70,11 @@ test('coerceConfig accepts the photo pet style', () => {
   assert.equal(config.pet.style, 'photo');
 });
 
+test('coerceConfig accepts the moonfox pet style', () => {
+  const config = coerceConfig({ pet: { style: 'moonfox' } });
+  assert.equal(config.pet.style, 'moonfox');
+});
+
 test('coerceConfig accepts the ruan pet style', () => {
   const config = coerceConfig({ pet: { style: 'ruan' } });
   assert.equal(config.pet.style, 'ruan');
@@ -77,7 +84,7 @@ test('coerceConfig clamps out-of-range pet values and rejects unknown styles', (
   const config = coerceConfig({
     pet: { style: 'dragon', positionX: 999, positionY: -5, size: 1 },
   });
-  assert.equal(config.pet.style, 'photo'); // unknown style falls back
+  assert.equal(config.pet.style, 'moonfox'); // unknown style falls back
   assert.equal(config.pet.positionX, 100); // clamped to max
   assert.equal(config.pet.positionY, 0); // clamped to min
   assert.equal(config.pet.size, 64); // clamped to min
@@ -156,4 +163,33 @@ test('wide Ruan actions shift back inside the viewport at either edge', () => {
     assert.ok(center - visualWidth / 2 >= 7.99);
     assert.ok(center + visualWidth / 2 <= viewport - 7.99);
   }
+});
+
+test('Moonfox owns organic motion while Ruan exclusively owns meme actions', () => {
+  const component = readFileSync(new URL('../src/pet/Pet.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/pet/pet.css', import.meta.url), 'utf8');
+  assert.match(component, /pet\.style !== 'ruan'\) return/);
+  assert.match(component, /MOONFOX_MOTIONS/);
+  assert.match(component, /setMoonfoxBlinking\(true\)/);
+  assert.doesNotMatch(css, /not\(\[data-style='ruan'\]\)\[data-action/);
+  assert.match(css, /dth-moonfox-head/);
+  assert.match(css, /dth-moonfox-tail-wag/);
+  assert.match(css, /dth-moonfox-head-shake/);
+  assert.doesNotMatch(css, /dth-moonfox-playful/);
+});
+
+test('voice styles expose six clearly separated intonation presets', () => {
+  assert.deepEqual(VOICE_STYLE_IDS, ['normal', 'gentle', 'cheerful', 'playful', 'calm', 'robot']);
+  const gentle = resolveVoiceProfile('gentle', 'photo');
+  const playful = resolveVoiceProfile('playful', 'photo');
+  const calm = resolveVoiceProfile('calm', 'photo');
+  assert.ok(playful.pitch - calm.pitch > 0.7);
+  assert.ok(playful.rate - gentle.rate > 0.25);
+});
+
+test('each pet keeps a distinct voice colour within the same intonation', () => {
+  const profiles = ['moonfox', 'ghost', 'slime', 'cat', 'photo', 'ruan']
+    .map((style) => resolveVoiceProfile('normal', style as import('../src/config/types.ts').PetStyle))
+    .map((profile) => `${profile.pitch}:${profile.rate}`);
+  assert.equal(new Set(profiles).size, 6);
 });

@@ -1,5 +1,5 @@
 /**
- * Shared configuration types for DeepSeek Harness Desktop Themes (schema v2).
+ * Shared configuration types for DeepSeek Harness Desktop Themes (schema v3).
  *
  * These types are platform-agnostic: they are imported by the Host entry
  * (schema registration) and the Client entry (presenter + settings UI), and
@@ -37,10 +37,10 @@ export type LightIntensity = 'off' | 'soft' | 'standard' | 'bright';
 export type BorderRadiusLevel = 'compact' | 'standard' | 'soft';
 
 /** Desktop pet character style. */
-export type PetStyle = 'ghost' | 'slime' | 'cat' | 'photo' | 'ruan';
+export type PetStyle = 'moonfox' | 'ghost' | 'slime' | 'cat' | 'photo' | 'ruan';
 
 /** Desktop pet voice (text-to-speech) emotion presets. */
-export type VoiceStyle = 'normal' | 'cheerful' | 'playful' | 'robot';
+export type VoiceStyle = 'normal' | 'gentle' | 'cheerful' | 'playful' | 'calm' | 'robot';
 
 /** Content width presets. */
 export type ContentWidthLevel = 'compact' | 'standard' | 'wide';
@@ -262,7 +262,7 @@ export const SETTINGS_NAMESPACE = 'ui-desktop-themes';
 export type SettingsField = keyof Omit<DesktopThemesConfig, 'schemaVersion'>;
 
 /** Current persisted schema version. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** Exported JSON envelope (the `schemaVersion` also lives inside the config). */
 export interface ExportedConfig {

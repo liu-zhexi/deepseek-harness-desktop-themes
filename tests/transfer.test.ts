@@ -12,7 +12,7 @@ test('export → import round-trips a config', () => {
 
   const json = exportConfigJson(original);
   const parsed = JSON.parse(json);
-  assert.equal(parsed.schemaVersion, 2);
+  assert.equal(parsed.schemaVersion, 3);
 
   const result = parseImportedConfig(json);
   assert.equal(result.ok, true);

@@ -3,8 +3,8 @@
  *
  * Registered into the `shell.overlay` slot — a frame-wide floating layer above
  * every column. The pet is:
- *  - a cute CSS/SVG character (ghost / slime / cat) tinted by the active theme
- *    accent, with idle float/blink/steam animations;
+ *  - character-specific motion: Moonfox has organic idle behavior, Ruan keeps
+ *    the frame-based meme actions, and the CSS pets keep their own idle loops;
  *  - draggable (position persisted as viewport percentages);
  *  - clickable, opening a compact quick menu with theme / font / wallpaper /
  *    effects / pet controls — the same business face the settings panel uses,
@@ -33,6 +33,8 @@ import { loadRuanAnim, RUAN_ANIM, RUAN_ANIM_ACTIONS } from './ruan-anim.ts';
 import type { RuanAnim, RuanAnimAction } from './ruan-anim.ts';
 import { speakLine, VOICE_STYLE_IDS } from './speech.ts';
 import { ruanActionShiftX, ruanActionVisualWidth } from './layout.ts';
+import moonfoxSrc from '../assets/pets/moonfox.jpg';
+import { applyBuiltinThemePreset, isBuiltinThemeId } from '../client/theme-presets.ts';
 
 /** Loose view of the global `useSessions` selector hook (session list + running bits). */
 interface SessionsSnapshot {
@@ -67,6 +69,7 @@ const TABS: ReadonlyArray<{ id: TabId; key: I18nKey }> = [
 ];
 
 const STYLES: ReadonlyArray<{ id: PetStyle; key: I18nKey }> = [
+  { id: 'moonfox', key: 'pet.style.moonfox' },
   { id: 'photo', key: 'pet.style.photo' },
   { id: 'ruan', key: 'pet.style.ruan' },
   { id: 'ghost', key: 'pet.style.ghost' },
@@ -82,9 +85,7 @@ const GLOW_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
 ];
 
 /**
- * Actions the character performs. `talk` / `basketball` / `lean` / `wave` are
- * real frame animations for the '阮启岚' character; other styles use CSS
- * reactions. `idle` = plain float.
+ * Frame actions belong exclusively to the '阮启岚' character.
  */
 type PetAction = 'idle' | RuanAnimAction;
 
@@ -108,6 +109,20 @@ const ACTION_DURATIONS: Record<PetAction, number> = {
   lean: RUAN_ANIM.lean.durationMs,
   wave: RUAN_ANIM.wave.durationMs,
 };
+
+type MoonfoxMotion = 'idle' | 'look-left' | 'look-right' | 'perk' | 'tail-wag' | 'head-shake';
+
+const MOONFOX_MOTIONS: ReadonlyArray<{ id: Exclude<MoonfoxMotion, 'idle'>; duration: number }> = [
+  // Head shake and tail wag are deliberately weighted twice: these are the
+  // fox's signature cute actions and should occur more often than glances.
+  { id: 'head-shake', duration: 1500 },
+  { id: 'tail-wag', duration: 1700 },
+  { id: 'look-left', duration: 950 },
+  { id: 'look-right', duration: 950 },
+  { id: 'perk', duration: 900 },
+  { id: 'head-shake', duration: 1500 },
+  { id: 'tail-wag', duration: 1700 },
+];
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
@@ -248,7 +263,8 @@ function CatFigure(props: { c: PetColors }) {
   );
 }
 
-function PetFigure(props: { style: PetStyle; c: PetColors; action: PetAction; frameIndex: number; anim: RuanAnim | null }) {
+function PetFigure(props: { style: PetStyle; c: PetColors; action: PetAction; frameIndex: number; anim: RuanAnim | null; moonfoxMotion: MoonfoxMotion; moonfoxBlinking: boolean }) {
+  if (props.style === 'moonfox') return <MoonfoxFigure motion={props.moonfoxMotion} blinking={props.moonfoxBlinking} />;
   if (props.style === 'photo') return <PhotoFigure src={PET_PHOTO_SRC} />;
   if (props.style === 'ruan') {
     if (props.action !== 'idle' && props.anim !== null && props.anim.frames.length > 0) {
@@ -262,6 +278,48 @@ function PetFigure(props: { style: PetStyle; c: PetColors; action: PetAction; fr
   return <GhostFigure c={props.c} />;
 }
 
+/** Moonfox — split into silhouette layers so head and tail move independently. */
+function MoonfoxLayer(props: { part: 'body' | 'head' | 'tail' }) {
+  const clipId = `dth-moonfox-clip-${props.part}`;
+  const paths = props.part === 'head'
+    ? ['M62 112 C82 126 96 140 108 142 L128 88 C140 108 145 129 153 141 C180 127 207 129 226 142 L266 68 C285 99 294 139 290 174 C287 217 270 253 244 277 C216 301 164 306 119 288 C78 271 56 231 58 184 C58 153 60 130 62 112 Z']
+    : props.part === 'body'
+      ? ['M119 258 C96 274 78 307 69 344 C65 364 78 386 96 398 C112 420 144 430 171 424 C193 438 226 435 248 421 C279 421 308 407 331 387 C311 358 291 314 258 276 C224 256 161 249 119 258 Z']
+      : [
+          'M258 248 C270 220 288 202 306 181 C334 195 354 221 361 253 C370 293 351 330 320 356 C296 378 290 405 323 421 C307 432 283 419 275 399 C266 379 255 367 244 354 C231 339 230 319 238 298 C245 278 250 263 258 248 Z',
+          'M322 318 C340 323 347 341 345 360 C343 379 351 393 356 414 L346 431 L337 414 C340 393 331 381 332 360 C334 344 328 332 322 318 Z',
+        ];
+  return (
+    <svg className={`dth-moonfox-layer dth-moonfox-${props.part}`} viewBox="0 0 400 500" aria-hidden="true">
+      <defs>
+        <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
+          {paths.map((path, index) => <path key={index} d={path} />)}
+        </clipPath>
+      </defs>
+      <image href={moonfoxSrc} width="400" height="500" preserveAspectRatio="none" clipPath={`url(#${clipId})`} />
+    </svg>
+  );
+}
+
+function MoonfoxFigure(props: { motion: MoonfoxMotion; blinking: boolean }) {
+  return (
+    <span className="dth-pet-figure dth-moonfox-stage" data-motion={props.motion} aria-hidden="true">
+      <MoonfoxLayer part="body" />
+      <MoonfoxLayer part="head" />
+      <MoonfoxLayer part="tail" />
+      {props.blinking ? (
+        <span className="dth-moonfox-eyelids">
+          <span className="dth-moonfox-lid dth-moonfox-lid-left" />
+          <span className="dth-moonfox-lid dth-moonfox-lid-right" />
+        </span>
+      ) : null}
+      <span className="dth-moonfox-tail-trail" />
+      <span className="dth-moonfox-star dth-moonfox-star-a" />
+      <span className="dth-moonfox-star dth-moonfox-star-b" />
+    </span>
+  );
+}
+
 /** A transparent-background PNG character, never redrawn. */
 function PhotoFigure(props: { src: string }) {
   return (
@@ -272,16 +330,6 @@ function PhotoFigure(props: { src: string }) {
       draggable={false}
       onContextMenu={(event) => event.preventDefault()}
     />
-  );
-}
-
-/** Basketball prop shown during the CSS "打篮球" fallback (non-ruan styles). */
-function BasketballProp() {
-  return (
-    <svg className="dth-pet-prop dth-pet-basketball" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="10.5" fill="#e8722a" stroke="#5c2c0c" strokeWidth="1.2" />
-      <path d="M12 1.5v21 M1.5 12h21 M4.2 4.6c3 3 12.6 3 15.6 0 M4.2 19.4c3-3 12.6-3 15.6 0" fill="none" stroke="#5c2c0c" strokeWidth="1.1" />
-    </svg>
   );
 }
 
@@ -304,6 +352,8 @@ export function Pet(props: PetFace) {
   const [activeAnim, setActiveAnim] = useState<RuanAnim | null>(null);
   const [actionRun, setActionRun] = useState(0);
   const [frameIndex, setFrameIndex] = useState(0);
+  const [moonfoxMotion, setMoonfoxMotion] = useState<MoonfoxMotion>('idle');
+  const [moonfoxBlinking, setMoonfoxBlinking] = useState(false);
   const [speechText, setSpeechText] = useState<string>(() => {
     const source = pet.speechLines.length > 0 ? pet.speechLines : DEFAULT_PET_SPEECH_LINES;
     return source.length > 0 ? source[Math.floor(Math.random() * source.length)] : '';
@@ -377,13 +427,9 @@ export function Pet(props: PetFace) {
 
   const playAction = useCallback(
     (next: PetAction) => {
-      if (next === 'idle' || still) return;
+      if (next === 'idle' || still || pet.style !== 'ruan') return;
       const request = actionRequestRef.current + 1;
       actionRequestRef.current = request;
-      if (pet.style !== 'ruan') {
-        startAction(next, null);
-        return;
-      }
       void loadRuanAnim(next).then((anim) => {
         if (actionRequestRef.current !== request) return;
         void decodeFrame(anim.frames[0] ?? '').then(() => {
@@ -397,9 +443,10 @@ export function Pet(props: PetFace) {
   );
 
   const playRandomAction = useCallback(() => {
+    if (pet.style !== 'ruan') return;
     const next = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
     playAction(next);
-  }, [playAction]);
+  }, [pet.style, playAction]);
 
   const showSpeech = useCallback((text: string, holdMs: number) => {
     setSpeechText(text);
@@ -415,19 +462,69 @@ export function Pet(props: PetFace) {
     const line = pickLine();
     if (line.length > 0) {
       showSpeech(line, 3600);
-      if (pet.voiceEnabled) speakLine(line, pet.voiceStyle);
+      if (pet.voiceEnabled) speakLine(line, pet.voiceStyle, pet.style);
     }
-    if (!still) playAction('talk');
+    if (!still && pet.style === 'ruan') playAction('talk');
+    if (!still && pet.style === 'moonfox') setMoonfoxMotion('perk');
     setOpen(true);
-  }, [pickLine, showSpeech, playAction, still, pet.voiceEnabled, pet.voiceStyle]);
+  }, [pickLine, showSpeech, playAction, still, pet.style, pet.voiceEnabled, pet.voiceStyle]);
 
   const onTurnComplete = useCallback(() => {
     const line = pickLine();
     if (line.length === 0) return;
     showSpeech(line, 4200);
-    if (!still) playAction('talk');
-    if (pet.voiceEnabled) speakLine(line, pet.voiceStyle);
-  }, [pickLine, showSpeech, playAction, still, pet.voiceEnabled, pet.voiceStyle]);
+    if (!still && pet.style === 'ruan') playAction('talk');
+    if (!still && pet.style === 'moonfox') setMoonfoxMotion('head-shake');
+    if (pet.voiceEnabled) speakLine(line, pet.voiceStyle, pet.style);
+  }, [pickLine, showSpeech, playAction, still, pet.style, pet.voiceEnabled, pet.voiceStyle]);
+
+  // Moonfox uses irregular independent blink/body/tail beats instead of the
+  // Ruan action catalogue, so it feels alive without becoming repetitive.
+  useEffect(() => {
+    if (pet.style !== 'moonfox' || still || open) {
+      setMoonfoxMotion('idle');
+      setMoonfoxBlinking(false);
+      return;
+    }
+    let alive = true;
+    let motionTimer: ReturnType<typeof setTimeout> | null = null;
+    let motionReset: ReturnType<typeof setTimeout> | null = null;
+    let blinkTimer: ReturnType<typeof setTimeout> | null = null;
+    let blinkReset: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleMotion = () => {
+      motionTimer = setTimeout(() => {
+        if (!alive) return;
+        const chosen = MOONFOX_MOTIONS[Math.floor(Math.random() * MOONFOX_MOTIONS.length)];
+        setMoonfoxMotion(chosen.id);
+        motionReset = setTimeout(() => {
+          if (!alive) return;
+          setMoonfoxMotion('idle');
+          scheduleMotion();
+        }, chosen.duration);
+      }, 800 + Math.random() * 2000);
+    };
+    const scheduleBlink = () => {
+      blinkTimer = setTimeout(() => {
+        if (!alive) return;
+        setMoonfoxBlinking(true);
+        blinkReset = setTimeout(() => {
+          if (!alive) return;
+          setMoonfoxBlinking(false);
+          scheduleBlink();
+        }, 115 + Math.random() * 65);
+      }, 900 + Math.random() * 2500);
+    };
+    scheduleMotion();
+    scheduleBlink();
+    return () => {
+      alive = false;
+      if (motionTimer !== null) clearTimeout(motionTimer);
+      if (motionReset !== null) clearTimeout(motionReset);
+      if (blinkTimer !== null) clearTimeout(blinkTimer);
+      if (blinkReset !== null) clearTimeout(blinkReset);
+    };
+  }, [pet.style, still, open]);
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -570,7 +667,8 @@ export function Pet(props: PetFace) {
       const now = Date.now();
       if (now - lastTapRef.current <= 300) {
         lastTapRef.current = 0;
-        if (!still) playRandomAction();
+        if (!still && pet.style === 'ruan') playRandomAction();
+        else if (!still && pet.style === 'moonfox') setMoonfoxMotion('head-shake');
       } else {
         lastTapRef.current = now;
         singleClick();
@@ -592,7 +690,7 @@ export function Pet(props: PetFace) {
     if (result.ok) void props.listRecentWallpapers().then(setRecent);
   };
 
-  const setTheme = (id: string) => props.commit({ ...config, theme: id });
+  const setTheme = (id: string) => props.commit(isBuiltinThemeId(id) ? applyBuiltinThemePreset(config, id) : { ...config, theme: id });
   const setFont = (patch: Partial<DesktopThemesConfig['font']>) =>
     props.commit({ ...config, font: { ...config.font, ...patch } });
   const setEffects = (patch: Partial<DesktopThemesConfig['effects']>) =>
@@ -634,13 +732,13 @@ export function Pet(props: PetFace) {
           onMouseEnter={() => {
             setHover(true);
             setSpeechText(pickLine());
-            if (!still) playAction('wave');
+            if (!still && pet.style === 'ruan') playAction('wave');
+            if (!still && pet.style === 'moonfox') setMoonfoxMotion('perk');
           }}
           onMouseLeave={() => setHover(false)}
           onContextMenu={(event) => event.preventDefault()}
         >
-          <PetFigure style={pet.style} c={colors} action={action} frameIndex={frameIndex} anim={activeAnim} />
-          {action === 'basketball' && pet.style !== 'ruan' ? <BasketballProp /> : null}
+          <PetFigure style={pet.style} c={colors} action={action} frameIndex={frameIndex} anim={activeAnim} moonfoxMotion={moonfoxMotion} moonfoxBlinking={moonfoxBlinking} />
         </button>
         {pet.speech && (hover || open || speechVisible) ? (
           <span className="dth-pet-bubble" role="status">
@@ -832,24 +930,28 @@ export function Pet(props: PetFace) {
                       </button>
                     ))}
                   </div>
-                  <span className="dth-pet-label">{t('pet.action.title')}</span>
-                  <div className="dth-pet-actions" role="group" aria-label={t('pet.action.title')}>
-                    {FRAME_ACTIONS.map((item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        className={`dth-pet-action${action === item ? ' is-active' : ''}`}
-                        aria-pressed={action === item}
-                        disabled={still}
-                        onClick={() => playAction(item)}
-                      >
-                        {t(ACTION_LABELS[item])}
-                      </button>
-                    ))}
-                    <button type="button" className="dth-pet-action" disabled={still} onClick={playRandomAction}>
-                      {t('pet.action.random')}
-                    </button>
-                  </div>
+                  {pet.style === 'ruan' ? (
+                    <>
+                      <span className="dth-pet-label">{t('pet.action.title')}</span>
+                      <div className="dth-pet-actions" role="group" aria-label={t('pet.action.title')}>
+                        {FRAME_ACTIONS.map((item) => (
+                          <button
+                            key={item}
+                            type="button"
+                            className={`dth-pet-action${action === item ? ' is-active' : ''}`}
+                            aria-pressed={action === item}
+                            disabled={still}
+                            onClick={() => playAction(item)}
+                          >
+                            {t(ACTION_LABELS[item])}
+                          </button>
+                        ))}
+                        <button type="button" className="dth-pet-action" disabled={still} onClick={playRandomAction}>
+                          {t('pet.action.random')}
+                        </button>
+                      </div>
+                    </>
+                  ) : null}
                   <label className="dth-pet-label" htmlFor="dth-pet-size">
                     {t('pet.size')} · {pet.size}px
                   </label>

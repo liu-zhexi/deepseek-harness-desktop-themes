@@ -21,8 +21,8 @@ const PARTICLE_DENSITIES = ['off', 'low', 'medium', 'high'] as const;
 const LIGHT_INTENSITIES = ['off', 'soft', 'standard', 'bright'] as const;
 const RADIUS_LEVELS = ['compact', 'standard', 'soft'] as const;
 const WIDTH_LEVELS = ['compact', 'standard', 'wide'] as const;
-const PET_STYLES = ['ghost', 'slime', 'cat', 'photo', 'ruan'] as const;
-const VOICE_STYLES = ['normal', 'cheerful', 'playful', 'robot'] as const;
+const PET_STYLES = ['moonfox', 'ghost', 'slime', 'cat', 'photo', 'ruan'] as const;
+const VOICE_STYLES = ['normal', 'gentle', 'cheerful', 'playful', 'calm', 'robot'] as const;
 const EFFECT_PRESETS = [
   'none',
   'tech-data',
@@ -56,46 +56,46 @@ const fontSchema = z.object({
 
 const appearanceSchema = z.object({
   transparencyEnabled: z.boolean().default(true),
-  windowOpacity: z.number().min(0.55).max(1).step(0.01).default(0.92),
-  sidebarOpacity: z.number().min(0.55).max(1).step(0.01).default(0.78),
-  panelOpacity: z.number().min(0.55).max(1).step(0.01).default(0.84),
-  inputOpacity: z.number().min(0.55).max(1).step(0.01).default(0.86),
-  borderRadius: z.union(RADIUS_LEVELS).default('standard'),
+  windowOpacity: z.number().min(0.55).max(1).step(0.01).default(0.9),
+  sidebarOpacity: z.number().min(0.55).max(1).step(0.01).default(0.82),
+  panelOpacity: z.number().min(0.55).max(1).step(0.01).default(0.88),
+  inputOpacity: z.number().min(0.55).max(1).step(0.01).default(0.9),
+  borderRadius: z.union(RADIUS_LEVELS).default('soft'),
   contentWidth: z.union(WIDTH_LEVELS).default('standard'),
   animationsEnabled: z.boolean().default(true),
 });
 
 const wallpaperSchema = z.object({
-  enabled: z.boolean().default(false),
-  sourceId: z.string().default(''),
+  enabled: z.boolean().default(true),
+  sourceId: z.string().default('builtin:obsidian-gold'),
   path: z.string().default(''),
-  name: z.string().default(''),
+  name: z.string().default('Obsidian Gold · Built-in'),
   fit: z.union(FIT_MODES).default('cover'),
   positionX: z.number().min(0).max(100).step(1).default(50),
   positionY: z.number().min(0).max(100).step(1).default(50),
   scale: z.number().min(0.5).max(3).step(0.05).default(1),
-  opacity: z.number().min(0).max(1).step(0.01).default(0.7),
+  opacity: z.number().min(0).max(1).step(0.01).default(0.72),
   blur: z.number().min(0).max(50).step(1).default(0),
-  overlay: z.number().min(0).max(1).step(0.01).default(0.35),
-  saturation: z.number().min(0).max(2).step(0.05).default(1),
-  brightness: z.number().min(0.5).max(1.5).step(0.05).default(1),
-  tintEnabled: z.boolean().default(false),
-  tintStrength: z.number().min(0).max(1).step(0.01).default(0.35),
+  overlay: z.number().min(0).max(1).step(0.01).default(0.42),
+  saturation: z.number().min(0).max(2).step(0.05).default(0.9),
+  brightness: z.number().min(0.5).max(1.5).step(0.05).default(0.9),
+  tintEnabled: z.boolean().default(true),
+  tintStrength: z.number().min(0).max(1).step(0.01).default(0.14),
 });
 
 const effectsSchema = z.object({
   enabled: z.boolean().default(true),
-  preset: z.union(EFFECT_PRESETS).default('starfield'),
+  preset: z.union(EFFECT_PRESETS).default('gold-dust'),
   density: z.union(PARTICLE_DENSITIES).default('medium'),
   particleCount: z.number().min(0).max(400).step(1).default(0),
-  particleSize: z.number().min(1).max(6).step(0.5).default(2),
-  particleSpeed: z.number().min(0.2).max(3).step(0.1).default(1),
-  particleOpacity: z.number().min(0).max(1).step(0.01).default(0.5),
+  particleSize: z.number().min(1).max(6).step(0.5).default(2.5),
+  particleSpeed: z.number().min(0.2).max(3).step(0.1).default(0.7),
+  particleOpacity: z.number().min(0).max(1).step(0.01).default(0.82),
   connectLines: z.boolean().default(false),
   mouseInteraction: z.boolean().default(false),
   parallax: z.boolean().default(false),
   cursorGlow: z.boolean().default(false),
-  glowIntensity: z.union(LIGHT_INTENSITIES).default('soft'),
+  glowIntensity: z.union(LIGHT_INTENSITIES).default('standard'),
   animationSpeed: z.union(ANIMATION_SPEEDS).default('gentle'),
   autoThemeColors: z.boolean().default(true),
   particleColors: z.array(z.string()).default([]),
@@ -108,12 +108,12 @@ const performanceSchema = z.object({
 
 const glassSchema = z.object({
   enabled: z.boolean().default(true),
-  blurLevel: z.union(BLUR_LEVELS).default('standard'),
+  blurLevel: z.union(BLUR_LEVELS).default('light'),
   strength: z.number().min(0).max(40).step(1).default(0),
-  saturation: z.number().min(0.5).max(2).step(0.05).default(1.1),
-  panelOpacity: z.number().min(0).max(1).step(0.01).default(0.84),
-  borderHighlight: z.number().min(0).max(1).step(0.01).default(0.5),
-  shadow: z.number().min(0).max(1).step(0.01).default(0.3),
+  saturation: z.number().min(0.5).max(2).step(0.05).default(1.05),
+  panelOpacity: z.number().min(0).max(1).step(0.01).default(0.88),
+  borderHighlight: z.number().min(0).max(1).step(0.01).default(0.36),
+  shadow: z.number().min(0).max(1).step(0.01).default(0.42),
 });
 
 const customThemeColorsSchema = z.object({
@@ -135,10 +135,10 @@ const customThemeSchema = z.object({
 
 const petSchema = z.object({
   enabled: z.boolean().default(true),
-  style: z.union(PET_STYLES).default('photo'),
-  positionX: z.number().min(0).max(100).step(1).default(88),
-  positionY: z.number().min(0).max(100).step(1).default(84),
-  size: z.number().min(64).max(288).step(1).default(112),
+  style: z.union(PET_STYLES).default('moonfox'),
+  positionX: z.number().min(0).max(100).step(1).default(89),
+  positionY: z.number().min(0).max(100).step(1).default(82),
+  size: z.number().min(64).max(288).step(1).default(144),
   animations: z.boolean().default(true),
   speech: z.boolean().default(true),
   speechLines: z.array(z.string()).default([...DEFAULT_PET_SPEECH_LINES]),
@@ -149,7 +149,7 @@ const petSchema = z.object({
 export const DesktopThemesSchema = z.object({
   schemaVersion: z.number().min(1).max(SCHEMA_VERSION).default(SCHEMA_VERSION),
   // Built-in or custom theme id (custom ids are `custom-<n>`).
-  theme: z.string().default('quantum-blue'),
+  theme: z.string().default('obsidian-gold'),
   font: fontSchema,
   appearance: appearanceSchema,
   wallpaper: wallpaperSchema,

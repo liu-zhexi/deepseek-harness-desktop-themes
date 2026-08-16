@@ -12,12 +12,12 @@ test('empty section resolves to the defaults', () => {
   assert.equal(resolved.appearance.windowOpacity, DEFAULT_CONFIG.appearance.windowOpacity);
   assert.equal(resolved.wallpaper.enabled, DEFAULT_CONFIG.wallpaper.enabled);
   assert.equal(resolved.effects.preset, DEFAULT_CONFIG.effects.preset);
-  assert.equal(resolved.schemaVersion, 2);
+  assert.equal(resolved.schemaVersion, 3);
 });
 
 test('null section also resolves to defaults', () => {
   const resolved = DesktopThemesSchema(null);
-  assert.equal(resolved.theme, 'quantum-blue');
+  assert.equal(resolved.theme, 'obsidian-gold');
 });
 
 test('out-of-range font size is rejected', () => {

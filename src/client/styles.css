@@ -60,6 +60,27 @@
   overflow-y: auto;
 }
 
+.dth-savebar {
+  position: sticky;
+  top: -20px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: -20px -24px 18px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 92%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.dth-savebar-hint {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .dth-section {
   margin-bottom: 24px;
 }
@@ -300,6 +321,8 @@
   position: relative;
   height: 76px;
   display: block;
+  background-position: center;
+  background-size: cover;
 }
 
 .dth-theme-card-panel {
@@ -656,16 +679,22 @@
 .dth-effects-canvas {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 3;
   pointer-events: none;
+  contain: layout style paint;
 }
 
 .dth-effects-glow {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2;
   pointer-events: none;
   opacity: var(--dth-glow-base, 0.18);
+  contain: layout style paint;
 }
 
 /* The breathing pulse is a compositor-only opacity animation (no per-frame
@@ -686,7 +715,7 @@
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  z-index: 0;
+  z-index: 3;
   pointer-events: none;
   opacity: 0;
   transform: translate(-9999px, -9999px);

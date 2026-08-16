@@ -10,6 +10,9 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
+  /* The anchor intentionally overflows a zero-height positioning node. Paint
+   * containment would clip the whole pet, so only isolate layout and style. */
+  contain: layout style;
 }
 
 .dth-pet-anchor {
@@ -66,6 +69,186 @@
 .dth-pet-figure.dth-pet-photo {
   filter: none;
   image-rendering: auto;
+}
+
+/* Moonfox is split into tightly clipped subject layers. This removes the pale
+ * rectangular/oval matte and lets the head and illustrated tail move
+ * independently without decoding multiple assets. */
+.dth-pet[data-style='moonfox'] .dth-pet-anchor,
+.dth-pet[data-style='moonfox'] .dth-pet-figure-btn {
+  width: 100%;
+}
+
+.dth-pet[data-style='moonfox'] .dth-pet-figure-btn {
+  aspect-ratio: 4 / 5;
+}
+
+.dth-moonfox-stage {
+  position: relative;
+  overflow: visible;
+  isolation: isolate;
+  filter: drop-shadow(0 8px 12px rgba(8, 18, 54, 0.36));
+  transform-origin: 50% 82%;
+}
+
+.dth-moonfox-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform;
+}
+
+.dth-moonfox-body {
+  z-index: 2;
+  transform-origin: 49% 82%;
+  animation: dth-moonfox-breathe 4.8s ease-in-out infinite;
+}
+
+.dth-moonfox-head {
+  z-index: 4;
+  transform-origin: 48% 54%;
+}
+
+.dth-moonfox-tail {
+  z-index: 3;
+  transform-origin: 64% 72%;
+  animation: dth-moonfox-tail-idle 4.2s ease-in-out infinite;
+}
+
+.dth-moonfox-tail-trail {
+  position: absolute;
+  z-index: 1;
+  right: 4%;
+  top: 35%;
+  width: 36%;
+  height: 38%;
+  border: 2px solid transparent;
+  border-right-color: rgba(116, 184, 255, 0.7);
+  border-bottom-color: rgba(153, 129, 255, 0.32);
+  border-radius: 50%;
+  filter: drop-shadow(0 0 7px rgba(105, 165, 255, 0.75));
+  transform-origin: 35% 76%;
+  pointer-events: none;
+  opacity: 0.48;
+}
+
+.dth-moonfox-star {
+  position: absolute;
+  z-index: 3;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f8edbd;
+  box-shadow: 0 0 8px rgba(145, 203, 255, 0.9);
+  pointer-events: none;
+}
+
+.dth-moonfox-star-a { left: 15%; top: 29%; }
+.dth-moonfox-star-b { right: 16%; top: 22%; animation-delay: -2.2s !important; }
+
+.dth-moonfox-eyelids {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+}
+
+.dth-moonfox-lid {
+  position: absolute;
+  top: 45%;
+  width: 11.2%;
+  height: 4.2%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #eef3ff 10%, #c7d5f7 72%, #40518f 100%);
+  box-shadow: 0 1px 0 rgba(27, 35, 78, 0.72);
+  animation: dth-moonfox-blink 0.18s ease-in-out both;
+}
+
+.dth-moonfox-lid-left { left: 30.5%; transform: rotate(6deg); }
+.dth-moonfox-lid-right { left: 50.1%; transform: rotate(-5deg); }
+
+.dth-pet[data-style='moonfox'][data-still='false'][data-open='false'] .dth-moonfox-star {
+  animation: dth-moonfox-twinkle 3.4s ease-in-out infinite;
+}
+
+.dth-moonfox-stage[data-motion='look-left'] .dth-moonfox-head { animation: dth-moonfox-look-left 0.95s ease-in-out both; }
+.dth-moonfox-stage[data-motion='look-right'] .dth-moonfox-head { animation: dth-moonfox-look-right 0.95s ease-in-out both; }
+.dth-moonfox-stage[data-motion='perk'] .dth-moonfox-head { animation: dth-moonfox-perk 0.9s cubic-bezier(.22,.9,.3,1) both; }
+.dth-moonfox-stage[data-motion='tail-wag'] .dth-moonfox-tail,
+.dth-moonfox-stage[data-motion='head-shake'] .dth-moonfox-tail { animation: dth-moonfox-tail-wag 0.42s ease-in-out 4; }
+.dth-moonfox-stage[data-motion='tail-wag'] .dth-moonfox-tail-trail,
+.dth-moonfox-stage[data-motion='head-shake'] .dth-moonfox-tail-trail { animation: dth-moonfox-tail-trail 0.42s ease-in-out 4; }
+.dth-moonfox-stage[data-motion='head-shake'] .dth-moonfox-head { animation: dth-moonfox-head-shake 1.5s cubic-bezier(.45,.05,.35,1) both; }
+
+@keyframes dth-moonfox-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(0.7%) scale(1.008, 0.992); }
+}
+
+@keyframes dth-moonfox-tail-idle {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(2deg) translateY(-0.5%); }
+}
+
+@keyframes dth-moonfox-look-left {
+  0%, 100% { transform: rotate(0deg) translateX(0); }
+  38%, 68% { transform: rotate(-5deg) translateX(-1.5%); }
+}
+
+@keyframes dth-moonfox-look-right {
+  0%, 100% { transform: rotate(0deg) translateX(0); }
+  38%, 68% { transform: rotate(5deg) translateX(1.5%); }
+}
+
+@keyframes dth-moonfox-perk {
+  0%, 100% { transform: translateY(0) scale(1); }
+  34% { transform: translateY(-3%) scale(1.025, 0.985); }
+  62% { transform: translateY(-1%) rotate(-2deg); }
+}
+
+@keyframes dth-moonfox-head-shake {
+  0%, 100% { transform: perspective(240px) translateX(0) rotateY(0deg) rotate(0deg); }
+  14% { transform: perspective(240px) translateX(-2.2%) rotateY(17deg) rotate(-1deg); }
+  30% { transform: perspective(240px) translateX(2.6%) rotateY(-20deg) rotate(1.2deg); }
+  47% { transform: perspective(240px) translateX(-2%) rotateY(16deg) rotate(-0.8deg); }
+  64% { transform: perspective(240px) translateX(1.5%) rotateY(-12deg) rotate(0.6deg); }
+  80% { transform: perspective(240px) translateX(-0.7%) rotateY(6deg) rotate(-0.3deg); }
+}
+
+@keyframes dth-moonfox-tail-wag {
+  0%, 100% { transform: rotate(-12deg) translateX(-0.5%); }
+  25% { transform: rotate(17deg) translateX(1.8%) translateY(-0.8%); }
+  50% { transform: rotate(-10deg) translateX(-0.8%); }
+  75% { transform: rotate(14deg) translateX(1.2%) translateY(-0.5%); }
+}
+
+@keyframes dth-moonfox-tail-trail {
+  0%, 100% { transform: rotate(-15deg) scaleX(0.86); opacity: 0.2; }
+  25% { transform: rotate(20deg) scaleX(1.16); opacity: 0.88; }
+  50% { transform: rotate(-12deg) scaleX(0.9); opacity: 0.32; }
+  75% { transform: rotate(17deg) scaleX(1.12); opacity: 0.78; }
+}
+
+@keyframes dth-moonfox-blink {
+  0%, 100% { transform: scaleY(0.18); opacity: 0; }
+  42%, 65% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes dth-moonfox-twinkle {
+  0%, 100% { transform: scale(0.5) rotate(0deg); opacity: 0.18; }
+  45% { transform: scale(1.25) rotate(90deg); opacity: 0.92; }
+  65% { transform: scale(0.75) rotate(140deg); opacity: 0.42; }
+}
+
+.dth-pet[data-style='moonfox'][data-still='true'] .dth-moonfox-layer,
+.dth-pet[data-style='moonfox'][data-still='true'] .dth-moonfox-tail-trail,
+.dth-pet[data-style='moonfox'][data-still='true'] .dth-moonfox-star {
+  animation: none !important;
 }
 
 /* Keep every Ruan frame at the idle character's visual height. Wide action
@@ -139,77 +322,8 @@
   100% { opacity: 0; transform: translateY(-7px); }
 }
 
-/* CSS fallback actions for the non-photo styles. The 'ruan' character instead
- * plays real frame animations (see ruan-anim.ts); these keep the other figures
- * composing with the idle float without being a rigid icon translate/rotate. */
-.dth-pet:not([data-style='ruan'])[data-action='talk'] .dth-pet-figure-btn {
-  animation: dth-pet-talk 1.8s ease-in-out;
-}
-
-.dth-pet:not([data-style='ruan'])[data-action='basketball'] .dth-pet-figure-btn {
-  animation: dth-pet-basketball 1.6s ease-in-out;
-}
-
-.dth-pet:not([data-style='ruan'])[data-action='lean'] .dth-pet-figure-btn {
-  animation: dth-pet-lean 1.5s ease-in-out;
-}
-
-.dth-pet:not([data-style='ruan'])[data-action='wave'] .dth-pet-figure-btn {
-  animation: dth-pet-wave 1.1s ease-in-out;
-}
-
 .dth-pet[data-still='true'] .dth-pet-figure-btn {
   animation: none !important;
-}
-
-.dth-pet-prop {
-  position: absolute;
-  pointer-events: none;
-}
-
-.dth-pet-basketball {
-  width: 30%;
-  right: -8%;
-  bottom: 8%;
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3));
-  animation: dth-pet-ball-bounce 0.5s ease-in-out infinite;
-}
-
-@keyframes dth-pet-talk {
-  0%, 100% { transform: translateY(0) scaleY(1); }
-  25% { transform: translateY(-3px) scaleY(1.01); }
-  50% { transform: translateY(0) scaleY(0.99); }
-  75% { transform: translateY(-2px) scaleY(1.01); }
-}
-
-@keyframes dth-pet-basketball {
-  0%, 100% { transform: translateY(0) scaleY(1); }
-  15% { transform: translateY(-10px) scaleY(1.02); }
-  30% { transform: translateY(0) scaleY(0.95); }
-  45% { transform: translateY(-8px) scaleY(1.01); }
-  60% { transform: translateY(0) scaleY(0.95); }
-  75% { transform: translateY(-7px) scaleY(1.01); }
-  90% { transform: translateY(0) scaleY(1); }
-}
-
-@keyframes dth-pet-lean {
-  0%, 100% { transform: rotate(0deg) translateX(0); }
-  20% { transform: rotate(10deg) translateX(-8px); }
-  40% { transform: rotate(0deg) translateX(0); }
-  60% { transform: rotate(-10deg) translateX(8px); }
-  80% { transform: rotate(0deg) translateX(0); }
-}
-
-@keyframes dth-pet-wave {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-9deg) translateY(-3px); }
-  55% { transform: rotate(8deg) translateY(-4px); }
-  80% { transform: rotate(-4deg) translateY(-1px); }
-}
-
-@keyframes dth-pet-ball-bounce {
-  0%, 100% { transform: translateY(0) scale(1, 1); }
-  50% { transform: translateY(-22px) scale(0.96, 1.04); }
 }
 
 /* Speech bubble. */

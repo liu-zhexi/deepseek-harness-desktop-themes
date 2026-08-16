@@ -33,10 +33,24 @@ import { Pet, type PetFace } from '../pet/Pet.tsx';
 import { PLUGIN_BUILD_ID, PLUGIN_VERSION } from '../build-info.ts';
 import staticCss from './styles.css';
 import petCss from '../pet/pet.css';
+import { hydrateBuiltinWallpaper } from './theme-presets.ts';
+import { loadConfigSnapshot, saveConfigSnapshot } from '../storage/config-store.ts';
 
 const PLUGIN_ID = 'dsh-desktop-themes';
 const OVERRIDE_SOURCE = PLUGIN_ID;
 const PERSIST_DEBOUNCE_MS = 350;
+const SETTINGS_FIELDS: readonly SettingsField[] = [
+  'theme',
+  'font',
+  'appearance',
+  'wallpaper',
+  'glass',
+  'effects',
+  'performance',
+  'customThemes',
+  'recentWallpapers',
+  'pet',
+];
 
 if (typeof document !== 'undefined') {
   document.documentElement.dataset.dthVersion = PLUGIN_VERSION;
@@ -99,7 +113,12 @@ export function apply(ctx: ClientContext): void {
   const settingsScope = ctx.get('settingsScope') as SettingsScopeBinderLike | undefined;
   const slots = ctx.get('slots') as SlotsLike | undefined;
 
-  const store = createStore<DesktopThemesConfig>(createDefaultConfig());
+  // An explicit local save is available before the asynchronous host settings
+  // scope becomes ready, preventing a refresh from flashing/resetting defaults.
+  let explicitBootstrap = loadConfigSnapshot();
+  const store = createStore<DesktopThemesConfig>(
+    hydrateBuiltinWallpaper(explicitBootstrap ?? createDefaultConfig()),
+  );
 
   // ---- Theme registration (built-in) -------------------------------------
   if (theme !== undefined) {
@@ -214,35 +233,59 @@ export function apply(ctx: ClientContext): void {
   let scope: SettingsScopeLike | null = null;
   let pending: Partial<Record<SettingsField, unknown>> = {};
   let persistTimer: ReturnType<typeof setTimeout> | null = null;
-  const saveNotifier = createStore<{ saving: boolean; saved: boolean }>({ saving: false, saved: false });
+  const saveNotifier = createStore<{ saving: boolean; saved: boolean; failed: boolean }>({ saving: false, saved: false, failed: false });
 
-  const flushPersist = () => {
+  const flushPersist = async (explicit = false): Promise<boolean> => {
     persistTimer = null;
-    if (scope === null || Object.keys(pending).length === 0) return;
+    const localSaved = explicit ? saveConfigSnapshot(store.get()) : true;
+    if (scope === null || Object.keys(pending).length === 0) {
+      const ok = explicit ? localSaved : true;
+      saveNotifier.set({ saving: false, saved: ok, failed: !ok });
+      if (ok) setTimeout(() => saveNotifier.set({ saving: false, saved: false, failed: false }), 1800);
+      return ok;
+    }
     const writes = Object.entries(pending);
     pending = {};
-    Promise.allSettled(writes.map(([field, value]) => scope!.set(field, value))).then(() => {
-      saveNotifier.set({ saving: false, saved: true });
-      setTimeout(() => saveNotifier.set({ saving: false, saved: false }), 1800);
-    });
+    const results = await Promise.allSettled(writes.map(([field, value]) => scope!.set(field, value)));
+    const remoteSaved = results.every((result) => result.status === 'fulfilled');
+    const ok = localSaved && remoteSaved;
+    saveNotifier.set({ saving: false, saved: ok, failed: !ok });
+    if (ok) setTimeout(() => saveNotifier.set({ saving: false, saved: false, failed: false }), 1800);
+    return ok;
   };
 
   const schedulePersist = (field: SettingsField, value: unknown) => {
     pending[field] = value;
-    saveNotifier.set({ saving: true, saved: false });
+    saveNotifier.set({ saving: true, saved: false, failed: false });
     if (persistTimer !== null) clearTimeout(persistTimer);
-    persistTimer = setTimeout(flushPersist, PERSIST_DEBOUNCE_MS);
+    persistTimer = setTimeout(() => void flushPersist(), PERSIST_DEBOUNCE_MS);
+  };
+
+  const queueAllFields = (config: DesktopThemesConfig) => {
+    for (const field of SETTINGS_FIELDS) {
+      pending[field] = field === 'wallpaper' ? { ...config.wallpaper, path: '' } : config[field];
+    }
+  };
+
+  /** User-facing, synchronous-local + awaited-host save action. */
+  const saveNow = async (): Promise<boolean> => {
+    if (persistTimer !== null) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    queueAllFields(store.get());
+    saveNotifier.set({ saving: true, saved: false, failed: false });
+    return flushPersist(true);
   };
 
   // ---- Runtime apply (preview only, no persistence) ------------------------
   const applyRuntime = (next: DesktopThemesConfig) => {
     const prev = store.get();
     if (deepEqual(next, prev)) return;
+    const themeChanged = next.theme !== prev.theme;
+    const customThemesChanged = !deepEqual(next.customThemes, prev.customThemes);
     store.set(next);
-    applyDynamic(next);
-    applyTransparency(next);
-    applyEffects(next);
-    if (next.theme !== prev.theme) {
+    if (themeChanged) {
       activeThemeId = next.theme;
       if (theme !== undefined) {
         try {
@@ -252,28 +295,38 @@ export function apply(ctx: ClientContext): void {
         }
       }
     }
+    if (
+      themeChanged ||
+      customThemesChanged ||
+      !deepEqual(next.font, prev.font) ||
+      !deepEqual(next.appearance, prev.appearance) ||
+      !deepEqual(next.wallpaper, prev.wallpaper) ||
+      !deepEqual(next.glass, prev.glass) ||
+      !deepEqual(next.performance, prev.performance)
+    ) applyDynamic(next);
+    if (
+      themeChanged ||
+      customThemesChanged ||
+      !deepEqual(next.appearance, prev.appearance) ||
+      next.wallpaper.enabled !== prev.wallpaper.enabled
+    ) applyTransparency(next);
+    if (
+      themeChanged ||
+      customThemesChanged ||
+      !deepEqual(next.effects, prev.effects) ||
+      !deepEqual(next.performance, prev.performance)
+    ) applyEffects(next);
   };
 
   // ---- Commit path (preview + persist) ------------------------------------
   const commit = (next: DesktopThemesConfig) => {
+    next = hydrateBuiltinWallpaper(next);
     const prev = store.get();
     if (deepEqual(next, prev)) return;
     syncCustomThemes(next);
     applyRuntime(next);
     if (scope === null) return;
-    const fields: SettingsField[] = [
-      'theme',
-      'font',
-      'appearance',
-      'wallpaper',
-      'glass',
-      'effects',
-      'performance',
-      'customThemes',
-      'recentWallpapers',
-      'pet',
-    ];
-    for (const field of fields) {
+    for (const field of SETTINGS_FIELDS) {
       if (!deepEqual(next[field], prev[field])) {
         // The runtime object URL is never durable; persist only the managed id.
         const value = field === 'wallpaper' ? { ...next.wallpaper, path: '' } : next[field];
@@ -338,7 +391,7 @@ export function apply(ctx: ClientContext): void {
   const clearWallpaper = () => {
     const config = store.get();
     const id = config.wallpaper.sourceId;
-    if (id.length > 0) {
+    if (id.length > 0 && !id.startsWith('builtin:')) {
       const url = wallpaperUrls.get(id);
       if (url !== undefined) URL.revokeObjectURL(url);
       wallpaperUrls.delete(id);
@@ -371,6 +424,7 @@ export function apply(ctx: ClientContext): void {
   const restoreDurableWallpaper = async (config: DesktopThemesConfig) => {
     const wp = config.wallpaper;
     if (!wp.enabled || wp.sourceId.length === 0) return;
+    if (wp.sourceId.startsWith('builtin:')) return;
     if (wallpaperUrls.has(wp.sourceId)) return;
     const record = await getWallpaper(wp.sourceId);
     if (record === undefined) {
@@ -396,7 +450,16 @@ export function apply(ctx: ClientContext): void {
     const adopt = () => {
       const snapshot = scope?.getSnapshot();
       if (snapshot === undefined || snapshot.status !== 'ready' || snapshot.value === undefined) return;
-      const incoming = coerceConfig(snapshot.value);
+      const incoming = hydrateBuiltinWallpaper(coerceConfig(snapshot.value));
+      if (explicitBootstrap !== null) {
+        const saved = hydrateBuiltinWallpaper(explicitBootstrap);
+        explicitBootstrap = null;
+        if (!deepEqual(incoming, saved)) {
+          queueAllFields(saved);
+          void flushPersist();
+          return;
+        }
+      }
       if (deepEqual(incoming, store.get())) return;
       store.set(incoming);
       syncCustomThemes(incoming);
@@ -444,6 +507,7 @@ export function apply(ctx: ClientContext): void {
             close: typeof props.close === 'function' ? (props.close as () => void) : undefined,
             store,
             saveNotifier,
+            saveNow,
             commit,
             chooseWallpaper,
             clearWallpaper,
@@ -487,7 +551,10 @@ export function apply(ctx: ClientContext): void {
       wallpaperUrls.clear();
       for (const reg of customRegistrations.values()) reg.dispose();
       customRegistrations.clear();
-      if (persistTimer !== null) clearTimeout(persistTimer);
+      if (persistTimer !== null) {
+        clearTimeout(persistTimer);
+        void flushPersist();
+      }
       staticStyles.dispose();
       dynamicStyles.dispose();
     },
