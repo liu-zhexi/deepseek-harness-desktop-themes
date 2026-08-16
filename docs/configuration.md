@@ -17,7 +17,8 @@
   "effects": { /* … */ },
   "performance": { "level": "balanced" },
   "customThemes": [],
-  "recentWallpapers": []
+  "recentWallpapers": [],
+  "pet": { /* … */ }
 }
 ```
 
@@ -132,6 +133,23 @@
 ```
 
 悬停色、边框、次级背景由主色/背景自动派生；文字对比度自动检测与可一键修正。
+
+### `pet`
+
+桌面小人（桌面宠物）配置。
+
+| 字段 | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| `enabled` | boolean | true | 显示开关 |
+| `style` | enum | `photo` | `photo/ruan/ghost/slime/cat`（小程序员/阮启岚/幽灵/史莱姆/小猫） |
+| `positionX` | number | 88 | 水平锚点，视口百分比 0–100 |
+| `positionY` | number | 84 | 垂直锚点，视口百分比 0–100 |
+| `size` | number | 112 | 角色尺寸 px，64–288 |
+| `animations` | boolean | true | 待机动画（漂浮/眨眼/热气） |
+| `speech` | boolean | true | 悬停/打开菜单时显示气泡台词 |
+
+> 位置通过拖拽实时更新并持久化；`power-saver` 性能档位或系统 `prefers-reduced-motion` 下自动关闭动画。
+> `photo` 与 `ruan` 是透明底真人角色（内嵌资源，无运行时网络请求）；`ruan` 的说话、打篮球、铁山靠、挥手动作按动作延迟初始化，并会在靠近屏幕边缘时自动回推。`ghost/slime/cat` 为 SVG 绘制、随主题强调色着色。
 
 ## 版本迁移
 

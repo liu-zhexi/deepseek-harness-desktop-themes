@@ -11,6 +11,7 @@
  */
 import z from '@deepseek-ai/schemastery';
 import { SCHEMA_VERSION } from './types.ts';
+import { DEFAULT_PET_SPEECH_LINES } from './defaults.ts';
 
 const FIT_MODES = ['cover', 'contain', 'stretch', 'center', 'tile'] as const;
 const BLUR_LEVELS = ['off', 'light', 'standard', 'strong'] as const;
@@ -20,6 +21,8 @@ const PARTICLE_DENSITIES = ['off', 'low', 'medium', 'high'] as const;
 const LIGHT_INTENSITIES = ['off', 'soft', 'standard', 'bright'] as const;
 const RADIUS_LEVELS = ['compact', 'standard', 'soft'] as const;
 const WIDTH_LEVELS = ['compact', 'standard', 'wide'] as const;
+const PET_STYLES = ['ghost', 'slime', 'cat', 'photo', 'ruan'] as const;
+const VOICE_STYLES = ['normal', 'cheerful', 'playful', 'robot'] as const;
 const EFFECT_PRESETS = [
   'none',
   'tech-data',
@@ -130,6 +133,19 @@ const customThemeSchema = z.object({
   colors: customThemeColorsSchema,
 });
 
+const petSchema = z.object({
+  enabled: z.boolean().default(true),
+  style: z.union(PET_STYLES).default('photo'),
+  positionX: z.number().min(0).max(100).step(1).default(88),
+  positionY: z.number().min(0).max(100).step(1).default(84),
+  size: z.number().min(64).max(288).step(1).default(112),
+  animations: z.boolean().default(true),
+  speech: z.boolean().default(true),
+  speechLines: z.array(z.string()).default([...DEFAULT_PET_SPEECH_LINES]),
+  voiceEnabled: z.boolean().default(false),
+  voiceStyle: z.union(VOICE_STYLES).default('playful'),
+});
+
 export const DesktopThemesSchema = z.object({
   schemaVersion: z.number().min(1).max(SCHEMA_VERSION).default(SCHEMA_VERSION),
   // Built-in or custom theme id (custom ids are `custom-<n>`).
@@ -142,6 +158,7 @@ export const DesktopThemesSchema = z.object({
   performance: performanceSchema,
   customThemes: z.array(customThemeSchema).default([]),
   recentWallpapers: z.array(z.string()).default([]),
+  pet: petSchema,
 });
 
 export type DesktopThemesSchemaType = ReturnType<typeof DesktopThemesSchema>;

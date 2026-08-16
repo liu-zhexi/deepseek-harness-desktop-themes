@@ -15,6 +15,7 @@ import {
   DEFAULT_FONT,
   DEFAULT_GLASS,
   DEFAULT_PERFORMANCE,
+  DEFAULT_PET,
   DEFAULT_WALLPAPER,
   createDefaultConfig,
 } from './defaults.ts';
@@ -33,7 +34,10 @@ import type {
   LightIntensity,
   PerformanceConfig,
   PerformanceLevel,
+  PetConfig,
+  PetStyle,
   ThemeId,
+  VoiceStyle,
   WallpaperConfig,
   WallpaperFit,
 } from './types.ts';
@@ -55,6 +59,8 @@ const DENSITIES = ['off', 'low', 'medium', 'high'] as const;
 const LIGHT_INTENSITIES: readonly LightIntensity[] = ['off', 'soft', 'standard', 'bright'];
 const RADIUS_LEVELS: readonly BorderRadiusLevel[] = ['compact', 'standard', 'soft'];
 const WIDTH_LEVELS: readonly ContentWidthLevel[] = ['compact', 'standard', 'wide'];
+const PET_STYLES: readonly PetStyle[] = ['ghost', 'slime', 'cat', 'photo', 'ruan'];
+const VOICE_STYLES = ['normal', 'cheerful', 'playful', 'robot'] as const;
 const EFFECT_PRESETS: readonly EffectPresetId[] = [
   'none',
   'tech-data',
@@ -237,6 +243,23 @@ function coercePerformance(value: unknown): PerformanceConfig {
   };
 }
 
+function coercePet(value: unknown): PetConfig {
+  const src = isObject(value) ? value : {};
+  const speechLines = asStringArray(src.speechLines, 24);
+  return {
+    enabled: asBoolean(src.enabled, DEFAULT_PET.enabled),
+    style: asEnum(src.style, PET_STYLES, DEFAULT_PET.style),
+    positionX: asNumber(src.positionX, DEFAULT_PET.positionX, 0, 100, 1),
+    positionY: asNumber(src.positionY, DEFAULT_PET.positionY, 0, 100, 1),
+    size: asNumber(src.size, DEFAULT_PET.size, 64, 288, 1),
+    animations: asBoolean(src.animations, DEFAULT_PET.animations),
+    speech: asBoolean(src.speech, DEFAULT_PET.speech),
+    speechLines: speechLines.length > 0 ? speechLines : [...DEFAULT_PET.speechLines],
+    voiceEnabled: asBoolean(src.voiceEnabled, DEFAULT_PET.voiceEnabled),
+    voiceStyle: asEnum(src.voiceStyle, VOICE_STYLES as readonly VoiceStyle[], DEFAULT_PET.voiceStyle),
+  };
+}
+
 function coerceGlass(value: unknown): GlassConfig {
   const src = isObject(value) ? value : {};
   return {
@@ -323,6 +346,7 @@ function coerceCurrent(value: Record<string, unknown>): DesktopThemesConfig {
     performance: coercePerformance(value.performance),
     customThemes,
     recentWallpapers: asStringArray(value.recentWallpapers, 16),
+    pet: coercePet(value.pet),
   };
 }
 

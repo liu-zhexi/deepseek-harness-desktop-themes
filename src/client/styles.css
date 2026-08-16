@@ -132,6 +132,12 @@
   border-radius: 8px;
 }
 
+.dth-textarea {
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.5;
+}
+
 .dth-slider {
   display: flex;
   align-items: center;

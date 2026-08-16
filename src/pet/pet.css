@@ -1,0 +1,494 @@
+/* Desktop pet (桌面小人) — floats over the whole shell via the shell.overlay
+ * layer. Colors reuse the product's `--dsw-alias-*` tokens so the pet and its
+ * quick menu follow the active theme; the figure itself is tinted by the
+ * active theme accent (computed at runtime). */
+
+.dth-pet {
+  position: absolute;
+  z-index: 40;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.dth-pet-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(calc(-50% + var(--dth-pet-shift-x, 0px)), -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.dth-pet-figure-btn {
+  display: block;
+  position: relative;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dth-pet-figure-btn:active {
+  cursor: grabbing;
+}
+
+.dth-pet[data-dragging='true'] .dth-pet-figure-btn {
+  cursor: grabbing;
+}
+
+.dth-pet-figure-btn:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: 4px;
+  border-radius: 16px;
+}
+
+.dth-pet-figure {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.28));
+  transition: transform 0.18s ease;
+}
+
+.dth-pet-figure-btn:hover .dth-pet-figure {
+  transform: scale(1.06);
+}
+
+/* The photo pet is a transparent-background PNG; a rectangle drop-shadow would
+ * trace its box, so give it a soft ground shadow instead of an outline. */
+.dth-pet-figure.dth-pet-photo {
+  filter: none;
+  image-rendering: auto;
+}
+
+/* Keep every Ruan frame at the idle character's visual height. Wide action
+ * canvases (basketball / shoulder check) expand around the center instead of
+ * shrinking the person or changing the button's layout size. */
+.dth-pet[data-style='ruan'] .dth-pet-anchor {
+  width: 100%;
+}
+
+.dth-pet[data-style='ruan'] .dth-pet-figure-btn {
+  width: 100%;
+  aspect-ratio: 320 / 939;
+  overflow: visible;
+}
+
+.dth-pet[data-style='ruan'] .dth-pet-photo {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: auto;
+  max-width: none;
+  height: 100%;
+  transform: translateX(-50%);
+  transform-origin: center bottom;
+}
+
+.dth-pet[data-style='ruan'] .dth-pet-figure-btn:hover .dth-pet-photo {
+  transform: translateX(-50%) scale(1.04);
+}
+
+/* Idle float (only when animations are enabled). The pet pauses while its
+ * quick menu is open so the dialog does not bob around. */
+.dth-pet[data-still='false'][data-open='false'] .dth-pet-anchor {
+  animation: dth-pet-float 3.2s ease-in-out infinite;
+}
+
+@keyframes dth-pet-float {
+  0%, 100% { transform: translate(calc(-50% + var(--dth-pet-shift-x, 0px)), -50%) translateY(0); }
+  50% { transform: translate(calc(-50% + var(--dth-pet-shift-x, 0px)), -50%) translateY(-7px); }
+}
+
+/* Eye blink. */
+.dth-pet-eye {
+  transform-origin: center;
+  animation: dth-pet-blink 4.6s ease-in-out infinite;
+}
+
+.dth-pet[data-still='true'] .dth-pet-eye {
+  animation: none;
+}
+
+@keyframes dth-pet-blink {
+  0%, 44%, 48%, 100% { transform: scaleY(1); }
+  46% { transform: scaleY(0.08); }
+}
+
+/* Coffee steam. */
+.dth-pet-steam {
+  animation: dth-pet-steam 2.2s ease-in-out infinite;
+  opacity: 0;
+}
+
+.dth-pet[data-still='true'] .dth-pet-steam {
+  animation: none;
+  opacity: 0.7;
+}
+
+@keyframes dth-pet-steam {
+  0% { opacity: 0; transform: translateY(2px); }
+  40% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-7px); }
+}
+
+/* CSS fallback actions for the non-photo styles. The 'ruan' character instead
+ * plays real frame animations (see ruan-anim.ts); these keep the other figures
+ * composing with the idle float without being a rigid icon translate/rotate. */
+.dth-pet:not([data-style='ruan'])[data-action='talk'] .dth-pet-figure-btn {
+  animation: dth-pet-talk 1.8s ease-in-out;
+}
+
+.dth-pet:not([data-style='ruan'])[data-action='basketball'] .dth-pet-figure-btn {
+  animation: dth-pet-basketball 1.6s ease-in-out;
+}
+
+.dth-pet:not([data-style='ruan'])[data-action='lean'] .dth-pet-figure-btn {
+  animation: dth-pet-lean 1.5s ease-in-out;
+}
+
+.dth-pet:not([data-style='ruan'])[data-action='wave'] .dth-pet-figure-btn {
+  animation: dth-pet-wave 1.1s ease-in-out;
+}
+
+.dth-pet[data-still='true'] .dth-pet-figure-btn {
+  animation: none !important;
+}
+
+.dth-pet-prop {
+  position: absolute;
+  pointer-events: none;
+}
+
+.dth-pet-basketball {
+  width: 30%;
+  right: -8%;
+  bottom: 8%;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3));
+  animation: dth-pet-ball-bounce 0.5s ease-in-out infinite;
+}
+
+@keyframes dth-pet-talk {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  25% { transform: translateY(-3px) scaleY(1.01); }
+  50% { transform: translateY(0) scaleY(0.99); }
+  75% { transform: translateY(-2px) scaleY(1.01); }
+}
+
+@keyframes dth-pet-basketball {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  15% { transform: translateY(-10px) scaleY(1.02); }
+  30% { transform: translateY(0) scaleY(0.95); }
+  45% { transform: translateY(-8px) scaleY(1.01); }
+  60% { transform: translateY(0) scaleY(0.95); }
+  75% { transform: translateY(-7px) scaleY(1.01); }
+  90% { transform: translateY(0) scaleY(1); }
+}
+
+@keyframes dth-pet-lean {
+  0%, 100% { transform: rotate(0deg) translateX(0); }
+  20% { transform: rotate(10deg) translateX(-8px); }
+  40% { transform: rotate(0deg) translateX(0); }
+  60% { transform: rotate(-10deg) translateX(8px); }
+  80% { transform: rotate(0deg) translateX(0); }
+}
+
+@keyframes dth-pet-wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-9deg) translateY(-3px); }
+  55% { transform: rotate(8deg) translateY(-4px); }
+  80% { transform: rotate(-4deg) translateY(-1px); }
+}
+
+@keyframes dth-pet-ball-bounce {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-22px) scale(0.96, 1.04); }
+}
+
+/* Speech bubble. */
+.dth-pet-bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l2);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.dth-pet-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--dsw-alias-border-l2);
+}
+
+/* Quick menu. */
+.dth-pet-menu {
+  position: absolute;
+  z-index: 50;
+  width: 232px;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l2);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.32);
+  color: var(--dsw-alias-label-primary);
+  pointer-events: auto;
+}
+
+/* Menu placement: below-left by default; flips near the bottom / right edge. */
+.dth-pet-menu[data-up='false'] {
+  top: calc(100% + 12px);
+}
+
+.dth-pet-menu[data-up='true'] {
+  bottom: calc(100% + 12px);
+}
+
+.dth-pet-menu[data-left='false'] {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dth-pet-menu[data-left='true'] {
+  right: 0;
+}
+
+.dth-pet-menu-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 6px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+
+.dth-pet-tab {
+  flex: 1;
+  padding: 7px 4px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dth-pet-tab:hover {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.dth-pet-tab.is-active {
+  color: var(--dsw-alias-label-primary);
+  border-bottom-color: var(--dsw-alias-brand-primary);
+}
+
+.dth-pet-menu-body {
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dth-pet-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.dth-pet-label {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+/* Theme chips. */
+.dth-pet-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dth-pet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 5px 9px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dth-pet-chip:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.dth-pet-chip.is-active {
+  border-color: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-label-primary);
+}
+
+.dth-pet-chip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18) inset;
+}
+
+.dth-pet-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Recent wallpapers. */
+.dth-pet-recents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dth-pet-recent {
+  max-width: 200px;
+  padding: 5px 9px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dth-pet-recent:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+/* Character style picker. */
+.dth-pet-styles {
+  display: flex;
+  gap: 6px;
+}
+
+.dth-pet-style {
+  flex: 1;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dth-pet-style:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.dth-pet-style.is-active {
+  background: var(--dsw-alias-button-primary-fill);
+  color: var(--dsw-alias-label-primary-foreground);
+  border-color: transparent;
+}
+
+.dth-pet-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.dth-pet-action {
+  min-width: 0;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dth-pet-action:hover:not(:disabled) {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.dth-pet-action.is-active {
+  color: var(--dsw-alias-label-primary-foreground);
+  background: var(--dsw-alias-button-primary-fill);
+  border-color: transparent;
+}
+
+.dth-pet-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.dth-pet-stack input[type='range'] {
+  width: 100%;
+  accent-color: var(--dsw-alias-brand-primary);
+}
+
+.dth-pet-stack .dth-row-actions {
+  gap: 6px;
+}
+
+.dth-pet-stack .dth-toggle {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.dth-pet-stack .dth-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.dth-pet-stack .dth-notice {
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dth-pet-anchor,
+  .dth-pet-eye,
+  .dth-pet-steam,
+  .dth-pet-figure,
+  .dth-pet-figure-btn {
+    animation: none !important;
+  }
+}

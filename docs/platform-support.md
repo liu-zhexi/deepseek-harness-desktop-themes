@@ -9,6 +9,13 @@
 | 自定义壁纸（IndexedDB 持久化） | ✅ | ✅ | ✅ |
 | 粒子/光影 Canvas-2D | ✅ | ✅ | ✅ |
 | 毛玻璃 `backdrop-filter` | ✅ Chromium/Edge 111+ | ✅ Safari 16.2+ | ✅ Firefox 113+ / Chromium |
+| 桌面小人（SVG + `shell.overlay` 浮动层 + Pointer Events 拖拽） | ✅ | ✅ | ✅ |
+
+## 桌面小人说明
+
+- 小人渲染在 DSH 布局的 `shell.overlay` 浮动层（z-index 20），位于各列之上、滚动容器之外；菜单与角色本体自行接管指针事件，不遮挡其余界面。
+- 拖拽使用 Pointer Events（含触屏），位置以视口百分比持久化；点击阈值 3px 区分“拖拽”与“点击打开菜单”。
+- `prefers-reduced-motion`、`pet.animations` 开关、`power-saver` 档位三者任一命中即关闭动画（漂浮/眨眼/热气）；CSS 侧 `@media (prefers-reduced-motion: reduce)` 兜底。
 
 ## 降级行为
 

@@ -4,7 +4,7 @@
  * focus outline, and never encodes state with color alone.
  */
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { quoteFont } from '../fonts/presets.ts';
 
 export interface ThemeCardModel {
@@ -176,6 +176,43 @@ export function TextInput(props: {
         placeholder={props.placeholder}
         disabled={props.disabled}
         onChange={(event) => props.onChange(event.currentTarget.value)}
+      />
+    </Field>
+  );
+}
+
+export function SpeechLinesEditor(props: {
+  id: string;
+  label: string;
+  hint?: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  // Keep a local draft while typing; the parsed, trimmed array is committed on
+  // blur so intermediate keystrokes never reorder or drop half-typed lines.
+  const [draft, setDraft] = useState<string | null>(null);
+  const text = draft ?? props.value.join('\n');
+  const commit = () => {
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    setDraft(null);
+    props.onChange(lines);
+  };
+  return (
+    <Field id={props.id} label={props.label} hint={props.hint}>
+      <textarea
+        id={props.id}
+        className="dth-input dth-textarea"
+        value={text}
+        placeholder={props.placeholder}
+        disabled={props.disabled}
+        rows={4}
+        onChange={(event) => setDraft(event.currentTarget.value)}
+        onBlur={commit}
       />
     </Field>
   );

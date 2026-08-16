@@ -3,8 +3,8 @@
   "name": "DeepSeek Harness Desktop Themes",
   "id": "dsh-desktop-themes",
   "short_name": "Desktop Themes",
-  "description": "Installable desktop appearance plugin for DeepSeek Harness: six signature themes, font presets, live particle/glow effects, durable custom wallpaper, glassmorphism, and custom color themes.",
-  "version": "1.1.0",
+  "description": "Installable desktop appearance plugin for DeepSeek Harness: six signature themes, font presets, live particle/glow effects, durable custom wallpaper, glassmorphism, custom color themes, and a draggable desktop pet (a little-coder character plus ghost/slime/cat) with a quick-switch menu.",
+  "version": "1.4.0",
   "author": "dsh-desktop-themes contributors",
   "license": "MIT",
   "entry": {
@@ -19,7 +19,8 @@
     "wallpaper",
     "glassmorphism",
     "custom-theme",
-    "settings-section"
+    "settings-section",
+    "desktop-pet"
   ],
   "platforms": ["windows", "macos", "linux"],
   "note": "This file is human-readable plugin metadata. The authoritative plugin manifest consumed by DeepSeek Harness is the `dsh` field in package.json (see package.json#dsh.client) plus the `cordis.patch.yml` row documented in README.md."

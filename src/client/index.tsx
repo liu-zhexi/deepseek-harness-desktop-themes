@@ -29,11 +29,19 @@ import { deleteWallpaper, getWallpaper, listWallpapers, newWallpaperId, putWallp
 import { detectLang } from '../settings/i18n.ts';
 import { SettingsPanel } from '../settings/SettingsPanel.tsx';
 import type { WallpaperPickResult } from '../settings/SettingsPanel.tsx';
+import { Pet, type PetFace } from '../pet/Pet.tsx';
+import { PLUGIN_BUILD_ID, PLUGIN_VERSION } from '../build-info.ts';
 import staticCss from './styles.css';
+import petCss from '../pet/pet.css';
 
 const PLUGIN_ID = 'dsh-desktop-themes';
 const OVERRIDE_SOURCE = PLUGIN_ID;
 const PERSIST_DEBOUNCE_MS = 350;
+
+if (typeof document !== 'undefined') {
+  document.documentElement.dataset.dthVersion = PLUGIN_VERSION;
+  document.documentElement.dataset.dthBuild = PLUGIN_BUILD_ID;
+}
 
 interface ThemeRuntimeLike {
   register(definition: { id: string; colorScheme: string; tokens: Record<string, string> }): () => void;
@@ -126,7 +134,7 @@ export function apply(ctx: ClientContext): void {
   // ---- Style controllers --------------------------------------------------
   const staticStyles = createStyleController(`${PLUGIN_ID}/static`, PLUGIN_ID);
   const dynamicStyles = createStyleController(`${PLUGIN_ID}/dynamic`, PLUGIN_ID);
-  staticStyles.set(staticCss);
+  staticStyles.set(staticCss + '\n' + petCss);
 
   // ---- Effects engine ------------------------------------------------------
   const effects = new EffectsEngine();
@@ -263,6 +271,7 @@ export function apply(ctx: ClientContext): void {
       'performance',
       'customThemes',
       'recentWallpapers',
+      'pet',
     ];
     for (const field of fields) {
       if (!deepEqual(next[field], prev[field])) {
@@ -440,6 +449,29 @@ export function apply(ctx: ClientContext): void {
             clearWallpaper,
             restoreWallpaper,
             listRecentWallpapers,
+          }),
+      );
+    });
+  }
+
+  // ---- Desktop pet (shell.overlay floating layer) --------------------------
+  if (slots !== undefined) {
+    slots.inject('shell.overlay', () => {
+      slots.register(
+        {
+          name: 'shell.overlay',
+          id: 'desktop-pet',
+          order: 90,
+        },
+        (standardProps) =>
+          Pet({
+            store,
+            commit,
+            chooseWallpaper,
+            clearWallpaper,
+            restoreWallpaper,
+            listRecentWallpapers,
+            useSessions: (standardProps as { useSessions?: PetFace['useSessions'] }).useSessions,
           }),
       );
     });

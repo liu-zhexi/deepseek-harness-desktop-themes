@@ -8,8 +8,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ChangeEvent, type DragEvent } from 'react';
-import type { DesktopThemesConfig, SettingsField, CustomThemeConfig, CustomThemeColors } from '../config/types.ts';
-import { createDefaultConfig, DEFAULT_APPEARANCE, DEFAULT_FONT, RECOMMENDED_OPACITY } from '../config/defaults.ts';
+import type { DesktopThemesConfig, SettingsField, CustomThemeConfig, CustomThemeColors, PetStyle, VoiceStyle } from '../config/types.ts';
+import { createDefaultConfig, DEFAULT_APPEARANCE, DEFAULT_FONT, DEFAULT_PET, RECOMMENDED_OPACITY } from '../config/defaults.ts';
 import { exportConfigJson, parseImportedConfig } from '../config/transfer.ts';
 import { THEMES, resolvePalette, type DesktopTheme } from '../themes/index.ts';
 import type { ThemePalette } from '../themes/palette.ts';
@@ -34,13 +34,16 @@ import {
   Segmented,
   Select,
   Slider,
+  SpeechLinesEditor,
   Swatch,
   ThemeCard,
   Toggle,
   type ThemeCardModel,
 } from './controls.tsx';
+import { VOICE_STYLE_IDS } from '../pet/speech.ts';
 import { GlassPreview, GlowPreview, LiveFontPreview, ParticlesPreview, TransparencyPreview } from './EffectPreview.tsx';
 import { detectLang, makeTranslator, type I18nKey, type Lang, type Translate } from './i18n.ts';
+import { PLUGIN_BUILD_ID, PLUGIN_VERSION } from '../build-info.ts';
 
 export type WallpaperPickResult = { ok: true } | { ok: false; reason: string };
 
@@ -59,12 +62,13 @@ interface SettingsPanelProps extends SettingsFace {
   close?: () => void;
 }
 
-type SectionId = 'theme' | 'font' | 'wallpaper' | 'light' | 'particles' | 'glass' | 'custom' | 'performance' | 'transfer';
+type SectionId = 'theme' | 'font' | 'wallpaper' | 'pet' | 'light' | 'particles' | 'glass' | 'custom' | 'performance' | 'transfer';
 
 const NAV: ReadonlyArray<{ id: SectionId; key: I18nKey }> = [
   { id: 'theme', key: 'nav.theme' },
   { id: 'font', key: 'nav.font' },
   { id: 'wallpaper', key: 'nav.wallpaper' },
+  { id: 'pet', key: 'nav.pet' },
   { id: 'light', key: 'nav.light' },
   { id: 'particles', key: 'nav.particles' },
   { id: 'glass', key: 'nav.glass' },
@@ -82,6 +86,14 @@ const PERFORMANCE_OPTIONS = ['power-saver', 'balanced', 'quality'] as const;
 const PRESET_OPTIONS = ['none', 'tech-data', 'starfield', 'aurora-flow', 'fireflies', 'bubbles', 'sakura', 'gold-dust', 'breathing', 'custom'] as const;
 
 const PRESET_SWATCHES = ['#3D7EFF', '#22D3EE', '#8B5CF6', '#14B8A6', '#FF7A59', '#C9A962', '#F472B6'];
+
+const STYLE_OPTIONS = [
+  { value: 'photo', key: 'pet.style.photo' },
+  { value: 'ruan', key: 'pet.style.ruan' },
+  { value: 'ghost', key: 'pet.style.ghost' },
+  { value: 'slime', key: 'pet.style.slime' },
+  { value: 'cat', key: 'pet.style.cat' },
+] as const;
 
 function patchTop(config: DesktopThemesConfig, field: SettingsField, value: unknown): DesktopThemesConfig {
   return { ...config, [field]: value };
@@ -168,6 +180,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
         {section === 'wallpaper' ? (
           <WallpaperSection config={config} t={t} update={update} chooseWallpaper={props.chooseWallpaper} clearWallpaper={props.clearWallpaper} restoreWallpaper={props.restoreWallpaper} listRecentWallpapers={props.listRecentWallpapers} />
         ) : null}
+        {section === 'pet' ? <PetSection config={config} t={t} update={update} /> : null}
         {section === 'light' ? <LightSection config={config} t={t} update={update} /> : null}
         {section === 'particles' ? <ParticlesSection config={config} t={t} update={update} /> : null}
         {section === 'glass' ? <GlassSection config={config} t={t} update={update} /> : null}
@@ -412,6 +425,57 @@ function WallpaperSection(props: {
       <Slider id="dth-wp-bright" label={props.t('wallpaper.brightness')} min={0.5} max={1.5} step={0.05} value={wallpaper.brightness} onChange={(v) => setWallpaper({ brightness: v })} format={(v) => v.toFixed(2)} disabled={!wallpaper.enabled} />
       <Toggle id="dth-wp-tint" label={props.t('wallpaper.tint')} checked={wallpaper.tintEnabled} onChange={(v) => setWallpaper({ tintEnabled: v })} disabled={!wallpaper.enabled} />
       <Slider id="dth-wp-tint-strength" label={props.t('wallpaper.tintStrength')} min={0} max={1} step={0.01} value={wallpaper.tintStrength} onChange={(v) => setWallpaper({ tintStrength: v })} format={(v) => `${Math.round(v * 100)}%`} disabled={!wallpaper.enabled || !wallpaper.tintEnabled} />
+    </Section>
+  );
+}
+
+function PetSection(props: { config: DesktopThemesConfig; t: Translate; update: (n: DesktopThemesConfig) => void }) {
+  const pet = props.config.pet;
+  const setPet = (patch: Partial<typeof pet>) => props.update(patchTop(props.config, 'pet', { ...pet, ...patch }));
+
+  return (
+    <Section title={props.t('pet.title')}>
+      <Toggle id="dth-pet-enabled" label={props.t('pet.enabled')} checked={pet.enabled} onChange={(v) => setPet({ enabled: v })} />
+      <Segmented
+        id="dth-pet-style"
+        label={props.t('pet.style')}
+        value={pet.style}
+        options={STYLE_OPTIONS.map((s) => ({ value: s.value, label: props.t(s.key as I18nKey) }))}
+        onChange={(v) => setPet({ style: v as PetStyle })}
+        disabled={!pet.enabled}
+      />
+      <Slider id="dth-pet-size" label={props.t('pet.size')} min={64} max={288} step={4} value={pet.size} onChange={(v) => setPet({ size: v })} format={(v) => `${v}px`} disabled={!pet.enabled} />
+      <Toggle id="dth-pet-animations" label={props.t('pet.animations')} checked={pet.animations} onChange={(v) => setPet({ animations: v })} disabled={!pet.enabled} />
+      <Toggle id="dth-pet-speech" label={props.t('pet.speech')} checked={pet.speech} onChange={(v) => setPet({ speech: v })} disabled={!pet.enabled} />
+      <SpeechLinesEditor
+        id="dth-pet-lines"
+        label={props.t('pet.speechLines')}
+        hint={props.t('pet.speechLinesHint')}
+        value={pet.speechLines}
+        onChange={(v) => setPet({ speechLines: v })}
+        disabled={!pet.enabled}
+      />
+      <Toggle id="dth-pet-voice" label={props.t('pet.voice')} checked={pet.voiceEnabled} onChange={(v) => setPet({ voiceEnabled: v })} disabled={!pet.enabled} />
+      {pet.voiceEnabled ? (
+        <>
+          <Segmented
+            id="dth-pet-voice-style"
+            label={props.t('pet.voiceStyle')}
+            value={pet.voiceStyle}
+            options={VOICE_STYLE_IDS.map((v) => ({ value: v, label: props.t(`pet.voiceStyle.${v}` as I18nKey) }))}
+            onChange={(v) => setPet({ voiceStyle: v as VoiceStyle })}
+            disabled={!pet.enabled}
+          />
+          <Notice tone="info">{props.t('pet.voiceHint')}</Notice>
+        </>
+      ) : null}
+      <div className="dth-row-actions">
+        <Button onClick={() => setPet({ positionX: DEFAULT_PET.positionX, positionY: DEFAULT_PET.positionY })}>
+          {props.t('pet.position.reset')}
+        </Button>
+      </div>
+      <Notice tone="info">{props.t('pet.dragHint')}</Notice>
+      <Notice tone="info">{props.t('plugin.version')}: {PLUGIN_VERSION} · {PLUGIN_BUILD_ID}</Notice>
     </Section>
   );
 }

@@ -36,6 +36,12 @@ export type LightIntensity = 'off' | 'soft' | 'standard' | 'bright';
 /** Corner-radius presets. */
 export type BorderRadiusLevel = 'compact' | 'standard' | 'soft';
 
+/** Desktop pet character style. */
+export type PetStyle = 'ghost' | 'slime' | 'cat' | 'photo' | 'ruan';
+
+/** Desktop pet voice (text-to-speech) emotion presets. */
+export type VoiceStyle = 'normal' | 'cheerful' | 'playful' | 'robot';
+
 /** Content width presets. */
 export type ContentWidthLevel = 'compact' | 'standard' | 'wide';
 
@@ -208,6 +214,29 @@ export interface CustomThemeConfig {
   colors: CustomThemeColors;
 }
 
+export interface PetConfig {
+  /** Master switch for the desktop pet. */
+  enabled: boolean;
+  /** Character style. */
+  style: PetStyle;
+  /** Horizontal anchor 0..100 (percent of viewport). */
+  positionX: number;
+  /** Vertical anchor 0..100 (percent of viewport). */
+  positionY: number;
+  /** Pet size in px (64..288). */
+  size: number;
+  /** Idle animations (float, blink, steam) plus playful one-shot actions. */
+  animations: boolean;
+  /** Speech bubble on hover / click. */
+  speech: boolean;
+  /** Editable speech-bubble lines (one phrase per entry). */
+  speechLines: string[];
+  /** Master switch for the pet reading a line aloud after each turn. */
+  voiceEnabled: boolean;
+  /** Emotion preset for the read-aloud voice. */
+  voiceStyle: VoiceStyle;
+}
+
 export interface DesktopThemesConfig {
   /** Persisted schema version (drives migration). */
   schemaVersion: number;
@@ -222,6 +251,8 @@ export interface DesktopThemesConfig {
   customThemes: CustomThemeConfig[];
   /** Recent wallpaper source ids (most recent first). */
   recentWallpapers: string[];
+  /** Desktop pet configuration. */
+  pet: PetConfig;
 }
 
 /** The settings namespace this plugin owns on the Host. */

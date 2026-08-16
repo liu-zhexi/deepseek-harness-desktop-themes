@@ -5,6 +5,7 @@ import type {
   FontConfig,
   GlassConfig,
   PerformanceConfig,
+  PetConfig,
   WallpaperConfig,
 } from './types.ts';
 import { SCHEMA_VERSION } from './types.ts';
@@ -90,6 +91,31 @@ export const DEFAULT_GLASS: GlassConfig = {
   shadow: 0.3,
 };
 
+/** Default speech-bubble lines (one phrase per entry). */
+export const DEFAULT_PET_SPEECH_LINES: string[] = [
+  'debug + coffee = life',
+  '404: 休息时间未找到',
+  '我是一只有 bug 的小幽灵',
+  '再写一行就下班',
+  '咖啡因已注入，冲刺中！',
+  '别慌，先喝口咖啡',
+  '编译通过？不存在的',
+  '今天也是元气满满的一天',
+];
+
+export const DEFAULT_PET: PetConfig = {
+  enabled: true,
+  style: 'photo',
+  positionX: 88,
+  positionY: 84,
+  size: 112,
+  animations: true,
+  speech: true,
+  speechLines: [...DEFAULT_PET_SPEECH_LINES],
+  voiceEnabled: false,
+  voiceStyle: 'playful',
+};
+
 export const DEFAULT_CONFIG: DesktopThemesConfig = {
   schemaVersion: SCHEMA_VERSION,
   theme: 'quantum-blue',
@@ -101,6 +127,7 @@ export const DEFAULT_CONFIG: DesktopThemesConfig = {
   performance: DEFAULT_PERFORMANCE,
   customThemes: [],
   recentWallpapers: [],
+  pet: DEFAULT_PET,
 };
 
 /** Lower bound enforced for any opacity slider (contrast floor). */
@@ -131,5 +158,6 @@ export function createDefaultConfig(): DesktopThemesConfig {
     performance: { ...DEFAULT_PERFORMANCE },
     customThemes: [],
     recentWallpapers: [],
+    pet: { ...DEFAULT_PET, speechLines: [...DEFAULT_PET.speechLines] },
   };
 }

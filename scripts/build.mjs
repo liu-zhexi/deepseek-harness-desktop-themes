@@ -10,13 +10,16 @@
  * Usage: `node scripts/build.mjs`
  */
 import { build } from 'esbuild';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = resolve(root, 'lib');
 const PLUGIN_ID = 'dsh-desktop-themes';
+const packageJson = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
+const version = String(packageJson.version);
+const buildId = process.env.DTH_BUILD_ID || `${version}+local.${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
 
 const shared = {
   bundle: true,
@@ -33,6 +36,11 @@ async function produce() {
     jsx: 'automatic',
     loader: { '.css': 'text' },
     external: ['react', 'react/jsx-runtime'],
+    define: {
+      __DTH_VERSION__: JSON.stringify(version),
+      __DTH_BUILD_ID__: JSON.stringify(buildId),
+    },
+    minify: true,
     write: false,
   });
 
@@ -48,7 +56,7 @@ async function produce() {
   mkdirSync(outDir, { recursive: true });
   writeFileSync(resolve(outDir, 'client.js'), wrapClient(client.outputFiles[0].text));
   writeFileSync(resolve(outDir, 'index.js'), host.outputFiles[0].text);
-  console.log('[build] wrote lib/index.js and lib/client.js');
+  console.log(`[build] wrote lib/index.js and lib/client.js (${buildId})`);
 }
 
 function wrapClient(code) {

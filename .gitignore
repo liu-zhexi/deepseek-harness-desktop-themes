@@ -6,3 +6,23 @@ dist/
 coverage/
 *.tgz
 *.tmp
+/tmp/
+__pycache__/
+*.pyc
+
+# Local generation scratch/output. Final runtime assets are generated into
+# src/pet and remain explicitly reviewable.
+scripts/_api_*.txt
+scripts/_api_*.html
+scripts/_edit_*.txt
+scripts/_edit_*.html
+scripts/_i2v_*.html
+scripts/_vision_out.txt
+assets/anim_*.mp4
+assets/_*.png
+
+# Private/high-resolution source artwork and generated intermediates. Runtime
+# character assets are reviewed and embedded under src/pet instead.
+/assets/
+/ChatGPT Image *.png
+/参考图片.png

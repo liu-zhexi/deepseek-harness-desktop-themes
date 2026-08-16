@@ -1,7 +1,7 @@
 {
   "name": "dsh-desktop-themes",
-  "version": "1.1.0",
-  "description": "DeepSeek Harness Desktop Themes — an installable, configurable, uninstallable desktop appearance plugin: six signature themes, font presets, live particle/glow effects, durable custom wallpaper, glassmorphism, and custom color themes.",
+  "version": "1.4.0",
+  "description": "DeepSeek Harness Desktop Themes — an installable, configurable, uninstallable desktop appearance plugin: six signature themes, font presets, live particle/glow effects, durable custom wallpaper, glassmorphism, custom color themes, and a draggable desktop pet with a quick-switch menu.",
   "keywords": [
     "deepseek-harness",
     "dsh",
@@ -41,7 +41,9 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test \"tests/*.test.ts\"",
-    "bench": "tsx scripts/bench.ts"
+    "bench": "tsx scripts/bench.ts",
+    "deploy:web": "node scripts/deploy-web.mjs --restart",
+    "deploy:web:no-restart": "node scripts/deploy-web.mjs"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.1"
